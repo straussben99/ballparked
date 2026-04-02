@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   StyleSheet,
   SafeAreaView,
   Platform,
@@ -16,18 +17,24 @@ import { Shadows } from '@/constants/shadows';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useStadiumStore } from '@/stores/useStadiumStore';
-import { STADIUMS } from '@/data/stadiums';
+import { STADIUMS, getAllDivisions, getStadiumsByDivision } from '@/data/stadiums';
 
-// Conditionally import MapView to avoid web crashes
+// Conditionally import MapView — fails in Expo Go (needs dev build)
 let MapView: any = null;
 let Marker: any = null;
 let Callout: any = null;
+let mapsAvailable = false;
 
 if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  Callout = Maps.Callout;
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+    Callout = Maps.Callout;
+    mapsAvailable = true;
+  } catch {
+    mapsAvailable = false;
+  }
 }
 
 const US_CENTER = {
@@ -53,20 +60,71 @@ export default function MapScreen() {
 
   const isVisited = (id: string) => visitedIds.includes(id);
 
-  // Fallback for web
-  if (Platform.OS === 'web' || !MapView) {
+  // Fallback for web or Expo Go (no native maps module)
+  if (!mapsAvailable) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{'\uD83D\uDCCD'} Stadium Map</Text>
-          <Text style={styles.subtitle}>Open on a device for the interactive map</Text>
-        </View>
-        <View style={styles.webFallback}>
-          <Ionicons name="map-outline" size={64} color={Colors.text.tertiary} />
-          <Text style={styles.webFallbackText}>
-            Interactive map available on iOS & Android
-          </Text>
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.fallbackScroll}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{'\uD83D\uDCCD'} Stadium Map</Text>
+            <Text style={styles.subtitle}>{visitedCount} / {total} Stadiums Visited</Text>
+          </View>
+
+          <View style={styles.progressContainer}>
+            <ProgressBar progress={visitedCount / total} height={10} />
+          </View>
+
+          {getAllDivisions().map((division) => {
+            const divStadiums = getStadiumsByDivision(division as any);
+            const divColor = Colors.division[division] ?? Colors.primary.navy;
+            return (
+              <View key={division} style={styles.divisionSection}>
+                <View style={[styles.divisionHeader, { borderLeftColor: divColor }]}>
+                  <Text style={[styles.divisionTitle, { color: divColor }]}>{division}</Text>
+                </View>
+                <View style={styles.pinsRow}>
+                  {divStadiums.map((stadium) => {
+                    const visited = isVisited(stadium.id);
+                    return (
+                      <TouchableOpacity
+                        key={stadium.id}
+                        style={[
+                          styles.fallbackPin,
+                          { backgroundColor: visited ? Colors.accent.green : Colors.semantic.unvisited },
+                        ]}
+                        onPress={() => handleStadiumPress(stadium.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.fallbackPinText, { color: visited ? Colors.text.inverse : Colors.text.primary }]}>
+                          {stadium.teamAbbr}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+
+          <Card style={styles.statsCard}>
+            <View style={styles.fallbackStatsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{visitedCount}</Text>
+                <Text style={styles.statLabel}>Visited</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{remaining}</Text>
+                <Text style={styles.statLabel}>Remaining</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{pct}%</Text>
+                <Text style={styles.statLabel}>Complete</Text>
+              </View>
+            </View>
+          </Card>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -192,16 +250,53 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
   },
-  webFallback: {
-    flex: 1,
+  fallbackScroll: {
+    paddingBottom: Layout.tabBarHeight + Spacing.lg,
+  },
+  progressContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Spacing.lg,
+  },
+  divisionSection: {
+    marginBottom: Spacing.lg,
+  },
+  divisionHeader: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Spacing.sm,
+    borderLeftWidth: 4,
+    marginLeft: Layout.screenPadding,
+    marginBottom: Spacing.sm,
+  },
+  divisionTitle: {
+    ...Typography.captionBold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  pinsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Layout.screenPadding,
+    gap: Spacing.sm,
+  },
+  fallbackPin: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.base,
+    ...Shadows.sm,
   },
-  webFallbackText: {
-    fontSize: FontSize.base,
-    color: Colors.text.tertiary,
-    textAlign: 'center',
+  fallbackPinText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+  },
+  statsCard: {
+    marginHorizontal: Layout.screenPadding,
+    marginTop: Spacing.md,
+  },
+  fallbackStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   // Map Pins
