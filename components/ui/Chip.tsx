@@ -43,12 +43,12 @@ export const Chip: React.FC<ChipProps> = ({
 const styles = StyleSheet.create({
   base: {
     borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm + 2,
     alignSelf: 'flex-start',
   },
   text: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     fontWeight: FontWeight.semiBold,
   },
 });

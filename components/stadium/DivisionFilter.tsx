@@ -50,6 +50,7 @@ export const DivisionFilter: React.FC<DivisionFilterProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.md,
   },
 });

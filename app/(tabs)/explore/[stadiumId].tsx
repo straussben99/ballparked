@@ -26,7 +26,6 @@ export default function StadiumDetailScreen() {
   const router = useRouter();
   const stadium = getStadiumById(stadiumId);
   const isVisited = useStadiumStore((state) => state.isVisited(stadiumId));
-  const toggleVisited = useStadiumStore((state) => state.toggleVisited);
   const rating = useRatingStore((state) => state.getRating(stadiumId));
 
   if (!stadium) {
@@ -93,27 +92,15 @@ export default function StadiumDetailScreen() {
           />
         </TouchableOpacity>
 
-        {/* Visited Toggle */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.visitedButton, isVisited && styles.visitedButtonActive]}
-            onPress={() => toggleVisited(stadiumId)}
-          >
-            <Ionicons
-              name={isVisited ? 'checkmark-circle' : 'ellipse-outline'}
-              size={22}
-              color={isVisited ? Colors.text.inverse : Colors.accent.green}
-            />
-            <Text
-              style={[
-                styles.visitedButtonText,
-                isVisited && styles.visitedButtonTextActive,
-              ]}
-            >
-              {isVisited ? 'Visited' : 'Mark as Visited'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Visited Badge (auto-set when rated) */}
+        {isVisited && (
+          <View style={styles.visitedBadgeRow}>
+            <View style={styles.visitedBadge}>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.text.inverse} />
+              <Text style={styles.visitedBadgeText}>Visited</Text>
+            </View>
+          </View>
+        )}
 
         {/* Stadium Facts */}
         <View style={styles.section}>
@@ -230,27 +217,23 @@ const styles = StyleSheet.create({
     color: Colors.primary.navy,
     marginBottom: Spacing.md,
   },
-  visitedButton: {
+  visitedBadgeRow: {
+    paddingHorizontal: Layout.screenPadding,
+    marginTop: Spacing.md,
+  },
+  visitedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent.green,
-    backgroundColor: Colors.background.white,
-  },
-  visitedButtonActive: {
+    alignSelf: 'flex-start',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     backgroundColor: Colors.accent.green,
-    borderColor: Colors.accent.green,
   },
-  visitedButtonText: {
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.semiBold,
-    color: Colors.accent.green,
-  },
-  visitedButtonTextActive: {
+  visitedBadgeText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
     color: Colors.text.inverse,
   },
   bulletRow: {
