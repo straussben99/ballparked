@@ -1,23 +1,209 @@
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Colors } from '@/constants/colors';
+import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
+import { FontSize, FontWeight, Typography } from '@/constants/typography';
+import { Shadows } from '@/constants/shadows';
+import { STADIUMS, getStadiumsByDivision, searchStadiums } from '@/data/stadiums';
+import { DivisionFilter } from '@/components/stadium/DivisionFilter';
+import { StadiumCard } from '@/components/stadium/StadiumCard';
+import type { Stadium, Division } from '@/types/stadium';
+
+type SortKey = 'name' | 'rating' | 'year';
 
 export default function ExploreScreen() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortKey>('name');
+
+  const filteredStadiums = useMemo(() => {
+    let results: Stadium[];
+
+    if (searchQuery.trim()) {
+      results = searchStadiums(searchQuery.trim());
+    } else if (selectedDivision) {
+      results = getStadiumsByDivision(selectedDivision as Division);
+    } else {
+      results = [...STADIUMS];
+    }
+
+    // Apply division filter even when searching
+    if (selectedDivision && searchQuery.trim()) {
+      results = results.filter((s) => s.division === selectedDivision);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case 'name':
+        results.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'rating':
+        // Placeholder: alphabetical for now
+        results.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'year':
+        results.sort((a, b) => a.yearOpened - b.yearOpened);
+        break;
+    }
+
+    return results;
+  }, [searchQuery, selectedDivision, sortBy]);
+
+  const handleStadiumPress = (stadiumId: string) => {
+    router.push(`/explore/${stadiumId}`);
+  };
+
+  const renderSortButton = (key: SortKey, label: string) => (
+    <TouchableOpacity
+      key={key}
+      onPress={() => setSortBy(key)}
+      style={[styles.sortButton, sortBy === key && styles.sortButtonActive]}
+    >
+      <Text style={[styles.sortText, sortBy === key && styles.sortTextActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Explore</Text>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Explore {'\u26BE'}</Text>
+        <Text style={styles.subtitle}>All 30 MLB Stadiums</Text>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search-outline"
+          size={20}
+          color={Colors.text.tertiary}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search stadiums, teams, cities..."
+          placeholderTextColor={Colors.text.tertiary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color={Colors.text.tertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <DivisionFilter
+        selectedDivision={selectedDivision}
+        onSelect={setSelectedDivision}
+      />
+
+      <View style={styles.sortRow}>
+        {renderSortButton('name', 'Name')}
+        {renderSortButton('rating', 'Rating')}
+        {renderSortButton('year', 'Year')}
+        <Text style={styles.resultCount}>
+          {filteredStadiums.length} stadium{filteredStadiums.length !== 1 ? 's' : ''}
+        </Text>
+      </View>
+
+      <FlatList
+        data={filteredStadiums}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <StadiumCard
+            stadium={item}
+            onPress={() => handleStadiumPress(item.id)}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF8F0',
+    backgroundColor: Colors.background.cream,
   },
-  text: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A2E',
+  header: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: Spacing.base,
+    paddingBottom: Spacing.md,
+  },
+  title: {
+    ...Typography.h2,
+    color: Colors.primary.navy,
+  },
+  subtitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.medium,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.white,
+    borderRadius: BorderRadius.md,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    height: 44,
+    ...Shadows.sm,
+  },
+  searchIcon: {
+    marginRight: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.text.primary,
+    height: '100%',
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  sortButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  sortButtonActive: {
+    backgroundColor: Colors.primary.navy,
+  },
+  sortText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.text.secondary,
+  },
+  sortTextActive: {
+    color: Colors.text.inverse,
+  },
+  resultCount: {
+    marginLeft: 'auto',
+    fontSize: FontSize.sm,
+    color: Colors.text.tertiary,
+  },
+  listContent: {
+    paddingBottom: Layout.tabBarHeight + Spacing.lg,
   },
 });

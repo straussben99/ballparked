@@ -32,6 +32,7 @@ export interface Stadium {
   notableFeatures: string[];
   funFacts: string[];
   heroImageUrl: string;
+  photos: string[];
   roofType: 'Open' | 'Retractable' | 'Fixed';
   surfaceType: 'Natural Grass' | 'Artificial Turf';
 }
