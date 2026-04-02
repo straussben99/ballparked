@@ -21,7 +21,8 @@ import { useRatingStore } from '@/stores/useRatingStore';
 import { getStadiumById } from '@/data/stadiums';
 
 export default function ProfileScreen() {
-  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const signOut = useAuthStore((s) => s.signOut);
   const visitedIds = useStadiumStore((s) => s.visitedIds);
   const ratings = useRatingStore((s) => s.ratings);
 
@@ -34,24 +35,29 @@ export default function ProfileScreen() {
         ) / 10
       : 0;
 
-  if (!user) return null;
+  if (!profile) return null;
 
   const total = 30;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Settings icon */}
+        {/* Settings icon + Sign out */}
         <View style={styles.settingsRow}>
-          <Ionicons name="settings-outline" size={24} color={Colors.text.secondary} />
+          <Ionicons
+            name="log-out-outline"
+            size={24}
+            color={Colors.text.secondary}
+            onPress={signOut}
+          />
         </View>
 
         {/* Avatar + Identity */}
         <View style={styles.profileCenter}>
-          <Avatar name={user.displayName} size={Layout.avatarSize.xl} />
-          <Text style={styles.displayName}>{user.displayName}</Text>
-          <Text style={styles.username}>@{user.username}</Text>
-          {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
+          <Avatar name={profile.display_name} size={Layout.avatarSize.xl} />
+          <Text style={styles.displayName}>{profile.display_name}</Text>
+          <Text style={styles.username}>@{profile.username}</Text>
+          {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
         </View>
 
         {/* Stats row */}
@@ -68,8 +74,8 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{user.followersCount} / {user.followingCount}</Text>
-              <Text style={styles.statLabel}>Followers / Following</Text>
+              <Text style={styles.statValue}>{allRatings.length}</Text>
+              <Text style={styles.statLabel}>Ratings</Text>
             </View>
           </View>
         </Card>
@@ -117,10 +123,10 @@ export default function ProfileScreen() {
         )}
 
         {/* Favorite Team */}
-        {user.favoriteTeam && (
+        {profile.favorite_team && (
           <View style={styles.favoriteSection}>
             <Badge
-              label={`Favorite Team: ${user.favoriteTeam}`}
+              label={`Favorite Team: ${profile.favorite_team}`}
               variant="division"
               color={Colors.accent.coral}
             />
