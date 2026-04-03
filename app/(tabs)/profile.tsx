@@ -27,7 +27,8 @@ export default function ProfileScreen() {
   const signOut = useAuthStore((s) => s.signOut);
   const visitedIds = useStadiumStore((s) => s.visitedIds);
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
-  const allRatings = useRatingStore((s) => s.getAllRatings());
+  const ratings = useRatingStore((s) => s.ratings);
+  const allRatings = Object.values(ratings);
 
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
