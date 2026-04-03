@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,12 +22,19 @@ import { getStadiumById } from '@/data/stadiums';
 
 export default function ProfileScreen() {
   const profile = useAuthStore((s) => s.profile);
+  const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const visitedIds = useStadiumStore((s) => s.visitedIds);
-  const ratings = useRatingStore((s) => s.ratings);
+  const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
+  const allRatings = useRatingStore((s) => s.getAllRatings());
+
+  useEffect(() => {
+    if (user) {
+      fetchUserRatings(user.id);
+    }
+  }, [user]);
 
   const visitedCount = visitedIds.length;
-  const allRatings = Object.values(ratings);
   const avgRating =
     allRatings.length > 0
       ? Math.round(
@@ -97,14 +104,14 @@ export default function ProfileScreen() {
 
         {allRatings.length > 0 ? (
           allRatings.map((r) => {
-            const stadium = getStadiumById(r.stadiumId);
+            const stadium = getStadiumById(r.stadium_id);
             return (
               <Card key={r.id} style={styles.ratingCard}>
                 <View style={styles.ratingRow}>
                   <View style={styles.ratingInfo}>
-                    <Text style={styles.ratingStadium}>{stadium?.name ?? r.stadiumId}</Text>
+                    <Text style={styles.ratingStadium}>{stadium?.name ?? r.stadium_id}</Text>
                     <Text style={styles.ratingDate}>
-                      {new Date(r.updatedAt).toLocaleDateString()}
+                      {new Date(r.updated_at).toLocaleDateString()}
                     </Text>
                   </View>
                   <Badge label={r.overall.toFixed(1)} variant="rating" />

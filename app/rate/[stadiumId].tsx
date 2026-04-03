@@ -7,6 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import {
   RatingCategoryKey,
 } from '@/types/rating';
 import { useRatingStore } from '@/stores/useRatingStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { RatingCategory } from '@/components/rating/RatingCategory';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -29,7 +31,9 @@ export default function RateStadiumModal() {
   const router = useRouter();
   const stadium = getStadiumById(stadiumId ?? '');
   const existingRating = useRatingStore((s) => s.getRating(stadiumId ?? ''));
-  const addOrUpdateRating = useRatingStore((s) => s.addOrUpdateRating);
+  const submitRating = useRatingStore((s) => s.submitRating);
+  const isSubmitting = useRatingStore((s) => s.isLoading);
+  const user = useAuthStore((s) => s.user);
 
   const [ratings, setRatings] = useState<Record<RatingCategoryKey, CategoryRating>>({
     vibes: { ...DEFAULT_CATEGORY_RATING },
@@ -42,11 +46,11 @@ export default function RateStadiumModal() {
   useEffect(() => {
     if (existingRating) {
       setRatings({
-        vibes: { ...existingRating.vibes },
-        foodAndBeer: { ...existingRating.foodAndBeer },
-        views: { ...existingRating.views },
-        stadiumIdentity: { ...existingRating.stadiumIdentity },
-        accessibility: { ...existingRating.accessibility },
+        vibes: { score: existingRating.vibes_score, selectedTags: existingRating.vibes_tags },
+        foodAndBeer: { score: existingRating.food_score, selectedTags: existingRating.food_tags },
+        views: { score: existingRating.views_score, selectedTags: existingRating.views_tags },
+        stadiumIdentity: { score: existingRating.identity_score, selectedTags: existingRating.identity_tags },
+        accessibility: { score: existingRating.accessibility_score, selectedTags: existingRating.accessibility_tags },
       });
     }
   }, [existingRating]);
@@ -61,18 +65,20 @@ export default function RateStadiumModal() {
     setRatings((prev) => ({ ...prev, [key]: rating }));
   };
 
-  const handleSubmit = () => {
-    if (!stadiumId) return;
-    addOrUpdateRating(stadiumId, {
-      stadiumId,
-      userId: 'local-user',
-      vibes: ratings.vibes,
-      foodAndBeer: ratings.foodAndBeer,
-      views: ratings.views,
-      stadiumIdentity: ratings.stadiumIdentity,
-      accessibility: ratings.accessibility,
-    });
-    router.back();
+  const handleSubmit = async () => {
+    if (!stadiumId || !user) return;
+    try {
+      await submitRating(stadiumId, user.id, {
+        vibes: ratings.vibes,
+        foodAndBeer: ratings.foodAndBeer,
+        views: ratings.views,
+        stadiumIdentity: ratings.stadiumIdentity,
+        accessibility: ratings.accessibility,
+      });
+      router.back();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to submit rating. Please try again.');
+    }
   };
 
   if (!stadium) {
@@ -143,11 +149,16 @@ export default function RateStadiumModal() {
         </View>
 
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           activeOpacity={0.8}
+          disabled={isSubmitting}
         >
-          <Text style={styles.submitText}>Submit Rating</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color={Colors.text.inverse} />
+          ) : (
+            <Text style={styles.submitText}>Submit Rating</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
@@ -233,6 +244,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.base,
     alignItems: 'center',
     marginBottom: Spacing.base,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitText: {
     fontSize: FontSize.lg,

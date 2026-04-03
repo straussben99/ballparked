@@ -1,47 +1,18 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface StadiumState {
   visitedIds: string[];
-  toggleVisited: (stadiumId: string) => void;
-  markVisited: (stadiumId: string) => void;
+  setVisitedIds: (ids: string[]) => void;
   isVisited: (stadiumId: string) => boolean;
   visitedCount: () => number;
 }
 
-export const useStadiumStore = create<StadiumState>()(
-  persist(
-    (set, get) => ({
-      visitedIds: [],
+export const useStadiumStore = create<StadiumState>()((set, get) => ({
+  visitedIds: [],
 
-      toggleVisited: (stadiumId: string) => {
-        const { visitedIds } = get();
-        if (visitedIds.includes(stadiumId)) {
-          set({ visitedIds: visitedIds.filter((id) => id !== stadiumId) });
-        } else {
-          set({ visitedIds: [...visitedIds, stadiumId] });
-        }
-      },
+  setVisitedIds: (ids: string[]) => set({ visitedIds: ids }),
 
-      markVisited: (stadiumId: string) => {
-        const { visitedIds } = get();
-        if (!visitedIds.includes(stadiumId)) {
-          set({ visitedIds: [...visitedIds, stadiumId] });
-        }
-      },
+  isVisited: (stadiumId: string) => get().visitedIds.includes(stadiumId),
 
-      isVisited: (stadiumId: string) => {
-        return get().visitedIds.includes(stadiumId);
-      },
-
-      visitedCount: () => {
-        return get().visitedIds.length;
-      },
-    }),
-    {
-      name: 'stadium-visited-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
-);
+  visitedCount: () => get().visitedIds.length,
+}));

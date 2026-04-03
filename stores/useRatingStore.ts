@@ -1,86 +1,152 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserRating, CategoryRating } from '../types/rating';
+import { supabase } from '@/lib/supabase';
 import { useStadiumStore } from './useStadiumStore';
 
+export interface SupabaseRating {
+  id: string;
+  user_id: string;
+  stadium_id: string;
+  vibes_score: number;
+  vibes_tags: string[];
+  food_score: number;
+  food_tags: string[];
+  views_score: number;
+  views_tags: string[];
+  identity_score: number;
+  identity_tags: string[];
+  accessibility_score: number;
+  accessibility_tags: string[];
+  overall: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RatingInput {
+  vibes: { score: number; selectedTags: string[] };
+  foodAndBeer: { score: number; selectedTags: string[] };
+  views: { score: number; selectedTags: string[] };
+  stadiumIdentity: { score: number; selectedTags: string[] };
+  accessibility: { score: number; selectedTags: string[] };
+  comment?: string;
+}
+
 interface RatingState {
-  ratings: Record<string, UserRating>;
-  addOrUpdateRating: (
-    stadiumId: string,
-    rating: Omit<UserRating, 'id' | 'overall' | 'createdAt' | 'updatedAt'>
-  ) => void;
-  getRating: (stadiumId: string) => UserRating | undefined;
-  getAllRatings: () => UserRating[];
-  averageRatingGiven: () => number;
+  ratings: Record<string, SupabaseRating>; // keyed by stadium_id
+  isLoading: boolean;
+  fetchUserRatings: (userId: string) => Promise<void>;
+  submitRating: (stadiumId: string, userId: string, input: RatingInput) => Promise<void>;
+  getRating: (stadiumId: string) => SupabaseRating | undefined;
+  getAllRatings: () => SupabaseRating[];
+  getVisitedStadiumIds: () => string[];
+  averageRating: () => number;
 }
 
-function computeOverall(rating: {
-  vibes: CategoryRating;
-  foodAndBeer: CategoryRating;
-  views: CategoryRating;
-  stadiumIdentity: CategoryRating;
-  accessibility: CategoryRating;
-}): number {
-  const scores = [
-    rating.vibes.score,
-    rating.foodAndBeer.score,
-    rating.views.score,
-    rating.stadiumIdentity.score,
-    rating.accessibility.score,
-  ];
-  const sum = scores.reduce((acc, s) => acc + s, 0);
-  return Math.round((sum / scores.length) * 10) / 10;
-}
+export const useRatingStore = create<RatingState>()((set, get) => ({
+  ratings: {},
+  isLoading: false,
 
-export const useRatingStore = create<RatingState>()(
-  persist(
-    (set, get) => ({
-      ratings: {},
+  fetchUserRatings: async (userId: string) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from('ratings')
+        .select('*')
+        .eq('user_id', userId);
 
-      addOrUpdateRating: (stadiumId, rating) => {
-        const existing = get().ratings[stadiumId];
-        const now = new Date().toISOString();
-        const overall = computeOverall(rating);
+      if (error) throw error;
 
-        const userRating: UserRating = {
-          ...rating,
-          id: existing?.id ?? `rating-${stadiumId}-${Date.now()}`,
-          stadiumId,
-          overall,
-          createdAt: existing?.createdAt ?? now,
-          updatedAt: now,
-        };
+      const ratingsMap: Record<string, SupabaseRating> = {};
+      for (const row of data ?? []) {
+        ratingsMap[row.stadium_id] = row as SupabaseRating;
+      }
 
-        set((state) => ({
-          ratings: {
-            ...state.ratings,
-            [stadiumId]: userRating,
-          },
-        }));
+      set({ ratings: ratingsMap });
 
-        // Auto-mark stadium as visited
-        useStadiumStore.getState().markVisited(stadiumId);
-      },
-
-      getRating: (stadiumId) => {
-        return get().ratings[stadiumId];
-      },
-
-      getAllRatings: () => {
-        return Object.values(get().ratings);
-      },
-
-      averageRatingGiven: () => {
-        const allRatings = Object.values(get().ratings);
-        if (allRatings.length === 0) return 0;
-        const sum = allRatings.reduce((acc, r) => acc + r.overall, 0);
-        return Math.round((sum / allRatings.length) * 10) / 10;
-      },
-    }),
-    {
-      name: 'rating-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      // Sync visited ids to stadium store
+      useStadiumStore.getState().setVisitedIds(Object.keys(ratingsMap));
+    } catch (err) {
+      console.error('Failed to fetch ratings:', err);
+    } finally {
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  submitRating: async (stadiumId: string, userId: string, input: RatingInput) => {
+    set({ isLoading: true });
+    try {
+      const scores = [
+        input.vibes.score,
+        input.foodAndBeer.score,
+        input.views.score,
+        input.stadiumIdentity.score,
+        input.accessibility.score,
+      ];
+      const overall = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+
+      const row = {
+        user_id: userId,
+        stadium_id: stadiumId,
+        vibes_score: input.vibes.score,
+        vibes_tags: input.vibes.selectedTags,
+        food_score: input.foodAndBeer.score,
+        food_tags: input.foodAndBeer.selectedTags,
+        views_score: input.views.score,
+        views_tags: input.views.selectedTags,
+        identity_score: input.stadiumIdentity.score,
+        identity_tags: input.stadiumIdentity.selectedTags,
+        accessibility_score: input.accessibility.score,
+        accessibility_tags: input.accessibility.selectedTags,
+        overall,
+        comment: input.comment ?? null,
+      };
+
+      const { data, error } = await supabase
+        .from('ratings')
+        .upsert(row, { onConflict: 'user_id,stadium_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const rating = data as SupabaseRating;
+      set((state) => ({
+        ratings: {
+          ...state.ratings,
+          [stadiumId]: rating,
+        },
+      }));
+
+      // Sync visited ids to stadium store
+      const visitedIds = Object.keys(get().ratings);
+      if (!visitedIds.includes(stadiumId)) {
+        visitedIds.push(stadiumId);
+      }
+      useStadiumStore.getState().setVisitedIds(visitedIds);
+    } catch (err) {
+      console.error('Failed to submit rating:', err);
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  getRating: (stadiumId: string) => {
+    return get().ratings[stadiumId];
+  },
+
+  getAllRatings: () => {
+    return Object.values(get().ratings);
+  },
+
+  getVisitedStadiumIds: () => {
+    return Object.keys(get().ratings);
+  },
+
+  averageRating: () => {
+    const allRatings = Object.values(get().ratings);
+    if (allRatings.length === 0) return 0;
+    const sum = allRatings.reduce((acc, r) => acc + r.overall, 0);
+    return Math.round((sum / allRatings.length) * 10) / 10;
+  },
+}));

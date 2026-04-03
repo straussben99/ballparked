@@ -5,6 +5,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useRatingStore } from '@/stores/useRatingStore';
 import { Colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -30,10 +31,14 @@ function useProtectedRoute() {
 export default function RootLayout() {
   const [initializing, setInitializing] = useState(true);
   const setSession = useAuthStore((s) => s.setSession);
+  const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user) {
+        fetchUserRatings(session.user.id);
+      }
       setInitializing(false);
       SplashScreen.hideAsync();
     });
@@ -42,6 +47,9 @@ export default function RootLayout() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        fetchUserRatings(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
