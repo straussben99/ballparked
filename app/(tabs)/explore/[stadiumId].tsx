@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
@@ -80,6 +81,7 @@ export default function StadiumDetailScreen() {
   const [communityRatings, setCommunityRatings] = useState<CommunityRating[]>([]);
   const [stadiumStats, setStadiumStats] = useState<StadiumStats | null>(null);
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true);
+  const [userPhotos, setUserPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (!stadiumId) return;
@@ -106,6 +108,20 @@ export default function StadiumDetailScreen() {
         }
         if (statsRes.data) {
           setStadiumStats(statsRes.data as StadiumStats);
+        }
+
+        // Fetch user-uploaded photos for ratings at this stadium
+        const ratingIds = (ratingsRes.data ?? []).map((r: any) => r.id);
+        if (ratingIds.length > 0) {
+          const { data: photosData } = await supabase
+            .from('rating_photos')
+            .select('url')
+            .in('rating_id', ratingIds)
+            .limit(20);
+
+          if (photosData && photosData.length > 0) {
+            setUserPhotos(photosData.map((p: any) => p.url));
+          }
         }
       } catch (err) {
         console.error('Failed to fetch community data:', err);
@@ -231,6 +247,26 @@ export default function StadiumDetailScreen() {
             <Text style={styles.noRatingText}>
               You haven't rated this stadium yet.
             </Text>
+          )}
+          {userPhotos.length > 0 && (
+            <View style={styles.userPhotosSection}>
+              <Text style={styles.userPhotosTitle}>{'\uD83D\uDCF8'} Your Photos</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.userPhotosScroll}
+              >
+                {userPhotos.map((url, i) => (
+                  <Image
+                    key={i}
+                    source={{ uri: url }}
+                    style={styles.userPhoto}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ))}
+              </ScrollView>
+            </View>
           )}
           {rating && (
             <CommentSection ratingId={rating.id} stadiumId={stadiumId} />
@@ -392,6 +428,23 @@ const styles = StyleSheet.create({
   noRatingText: {
     fontSize: FontSize.md,
     color: Colors.text.tertiary,
+  },
+  userPhotosSection: {
+    marginTop: Spacing.base,
+  },
+  userPhotosTitle: {
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.primary.navy,
+    marginBottom: Spacing.sm,
+  },
+  userPhotosScroll: {
+    gap: Spacing.sm,
+  },
+  userPhoto: {
+    width: 160,
+    height: 120,
+    borderRadius: BorderRadius.md,
   },
   communityAvgRow: {
     flexDirection: 'row',
