@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Linking,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,8 +18,56 @@ import { Shadows } from '@/constants/shadows';
 import { getStadiumById } from '@/data/stadiums';
 import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import { StadiumHero } from '@/components/stadium/StadiumHero';
 import { StadiumFacts } from '@/components/stadium/StadiumFacts';
+import { CommentSection } from '@/components/social/CommentSection';
+
+interface CommunityRating {
+  id: string;
+  user_id: string;
+  stadium_id: string;
+  overall: number;
+  created_at: string;
+  profiles: {
+    display_name: string;
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
+interface StadiumStats {
+  stadium_id: string;
+  avg_rating: number;
+  rating_count: number;
+}
+
+function getRelativeTime(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  const diffWeeks = Math.floor(diffDays / 7);
+  if (diffWeeks < 4) return `${diffWeeks}w ago`;
+  return date.toLocaleDateString();
+}
+
+function getInitials(name?: string): string {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default function StadiumDetailScreen() {
   const { stadiumId } = useLocalSearchParams<{ stadiumId: string }>();
@@ -26,6 +75,52 @@ export default function StadiumDetailScreen() {
   const stadium = getStadiumById(stadiumId);
   const isVisited = useStadiumStore((state) => state.isVisited(stadiumId));
   const rating = useRatingStore((state) => state.getRating(stadiumId));
+  const user = useAuthStore((state) => state.user);
+
+  const [communityRatings, setCommunityRatings] = useState<CommunityRating[]>([]);
+  const [stadiumStats, setStadiumStats] = useState<StadiumStats | null>(null);
+  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true);
+
+  useEffect(() => {
+    if (!stadiumId) return;
+
+    const fetchCommunityData = async () => {
+      setIsLoadingCommunity(true);
+      try {
+        const [ratingsRes, statsRes] = await Promise.all([
+          supabase
+            .from('ratings')
+            .select('*, profiles(display_name, username, avatar_url)')
+            .eq('stadium_id', stadiumId)
+            .order('created_at', { ascending: false })
+            .limit(10),
+          supabase
+            .from('stadium_stats')
+            .select('*')
+            .eq('stadium_id', stadiumId)
+            .single(),
+        ]);
+
+        if (ratingsRes.data) {
+          setCommunityRatings(ratingsRes.data as CommunityRating[]);
+        }
+        if (statsRes.data) {
+          setStadiumStats(statsRes.data as StadiumStats);
+        }
+      } catch (err) {
+        console.error('Failed to fetch community data:', err);
+      } finally {
+        setIsLoadingCommunity(false);
+      }
+    };
+
+    fetchCommunityData();
+  }, [stadiumId]);
+
+  // Filter out current user's rating from community list
+  const otherRatings = communityRatings.filter(
+    (r) => r.user_id !== user?.id
+  );
 
   if (!stadium) {
     return (
@@ -57,6 +152,19 @@ export default function StadiumDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <StadiumHero stadium={stadium} />
+
+        {/* Community Average */}
+        {stadiumStats && (
+          <View style={styles.communityAvgRow}>
+            <Ionicons name="people" size={18} color={Colors.accent.orange} />
+            <Text style={styles.communityAvgText}>
+              Community: {stadiumStats.avg_rating}
+            </Text>
+            <Text style={styles.communityAvgCount}>
+              ({stadiumStats.rating_count} rating{stadiumStats.rating_count !== 1 ? 's' : ''})
+            </Text>
+          </View>
+        )}
 
         {/* Address */}
         <TouchableOpacity style={styles.addressRow} onPress={openMaps}>
@@ -123,6 +231,52 @@ export default function StadiumDetailScreen() {
             <Text style={styles.noRatingText}>
               You haven't rated this stadium yet.
             </Text>
+          )}
+          {rating && (
+            <CommentSection ratingId={rating.id} stadiumId={stadiumId} />
+          )}
+        </View>
+
+        {/* Community Ratings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Community Ratings{otherRatings.length > 0 ? ` (${otherRatings.length})` : ''}
+          </Text>
+          {isLoadingCommunity ? (
+            <ActivityIndicator color={Colors.accent.coral} style={{ marginVertical: Spacing.base }} />
+          ) : otherRatings.length === 0 ? (
+            <Text style={styles.noRatingText}>
+              Be the first to rate this stadium!
+            </Text>
+          ) : (
+            otherRatings.map((cr) => (
+              <View key={cr.id} style={styles.communityCard}>
+                <View style={styles.communityHeader}>
+                  <View style={styles.communityAvatar}>
+                    <Text style={styles.communityAvatarText}>
+                      {getInitials(cr.profiles?.display_name)}
+                    </Text>
+                  </View>
+                  <View style={styles.communityInfo}>
+                    <Text style={styles.communityDisplayName}>
+                      {cr.profiles?.display_name ?? 'User'}
+                    </Text>
+                    {cr.profiles?.username && (
+                      <Text style={styles.communityUsername}>
+                        @{cr.profiles.username}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.communityScoreBadge}>
+                    <Text style={styles.communityScoreText}>{cr.overall}</Text>
+                  </View>
+                  <Text style={styles.communityTimestamp}>
+                    {getRelativeTime(cr.created_at)}
+                  </Text>
+                </View>
+                <CommentSection ratingId={cr.id} stadiumId={stadiumId} />
+              </View>
+            ))
           )}
         </View>
 
@@ -237,6 +391,75 @@ const styles = StyleSheet.create({
   },
   noRatingText: {
     fontSize: FontSize.md,
+    color: Colors.text.tertiary,
+  },
+  communityAvgRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  communityAvgText: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.accent.orange,
+  },
+  communityAvgCount: {
+    fontSize: FontSize.md,
+    color: Colors.text.tertiary,
+  },
+  communityCard: {
+    backgroundColor: Colors.background.white,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.card.border,
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  communityAvatar: {
+    width: Layout.avatarSize.sm,
+    height: Layout.avatarSize.sm,
+    borderRadius: Layout.avatarSize.sm / 2,
+    backgroundColor: Colors.primary.navyLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  communityAvatarText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.inverse,
+  },
+  communityInfo: {
+    flex: 1,
+  },
+  communityDisplayName: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary.navy,
+  },
+  communityUsername: {
+    fontSize: FontSize.sm,
+    color: Colors.text.tertiary,
+  },
+  communityScoreBadge: {
+    backgroundColor: Colors.accent.orange,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  communityScoreText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.inverse,
+  },
+  communityTimestamp: {
+    fontSize: FontSize.xs,
     color: Colors.text.tertiary,
   },
   bottomBar: {

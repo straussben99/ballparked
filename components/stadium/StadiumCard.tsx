@@ -11,9 +11,11 @@ import type { Stadium } from '@/types/stadium';
 interface StadiumCardProps {
   stadium: Stadium;
   onPress: () => void;
+  avgRating?: number;
+  ratingCount?: number;
 }
 
-export const StadiumCard: React.FC<StadiumCardProps> = ({ stadium, onPress }) => {
+export const StadiumCard: React.FC<StadiumCardProps> = ({ stadium, onPress, avgRating, ratingCount }) => {
   const isVisited = useStadiumStore((state) => state.isVisited(stadium.id));
 
   return (
@@ -31,6 +33,12 @@ export const StadiumCard: React.FC<StadiumCardProps> = ({ stadium, onPress }) =>
           </Text>
         </View>
         <View style={styles.right}>
+          {avgRating != null && ratingCount != null && ratingCount > 0 && (
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={12} color={Colors.text.inverse} />
+              <Text style={styles.ratingBadgeText}>{avgRating}</Text>
+            </View>
+          )}
           {isVisited ? (
             <Badge label="Visited" variant="visited" size="sm" />
           ) : (
@@ -88,5 +96,19 @@ const styles = StyleSheet.create({
   },
   chevron: {
     marginLeft: Spacing.xs,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accent.orange,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    gap: 3,
+  },
+  ratingBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.inverse,
   },
 });

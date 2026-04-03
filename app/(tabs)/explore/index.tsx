@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { FontSize, FontWeight, Typography } from '@/constants/typography';
 import { Shadows } from '@/constants/shadows';
+import { supabase } from '@/lib/supabase';
 import { STADIUMS, getStadiumsByDivision, searchStadiums } from '@/data/stadiums';
 import { DivisionFilter } from '@/components/stadium/DivisionFilter';
 import { StadiumCard } from '@/components/stadium/StadiumCard';
@@ -21,11 +22,37 @@ import type { Stadium, Division } from '@/types/stadium';
 
 type SortKey = 'name' | 'rating' | 'year';
 
+interface StadiumStatsMap {
+  [stadiumId: string]: { avg_rating: number; rating_count: number };
+}
+
 export default function ExploreScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>('name');
+  const [stadiumStats, setStadiumStats] = useState<StadiumStatsMap>({});
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('stadium_stats')
+        .select('*');
+
+      if (!error && data) {
+        const map: StadiumStatsMap = {};
+        for (const row of data) {
+          map[row.stadium_id] = {
+            avg_rating: row.avg_rating,
+            rating_count: row.rating_count,
+          };
+        }
+        setStadiumStats(map);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const filteredStadiums = useMemo(() => {
     let results: Stadium[];
@@ -49,8 +76,11 @@ export default function ExploreScreen() {
         results.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case 'rating':
-        // Placeholder: alphabetical for now
-        results.sort((a, b) => a.name.localeCompare(b.name));
+        results.sort((a, b) => {
+          const aRating = stadiumStats[a.id]?.avg_rating ?? 0;
+          const bRating = stadiumStats[b.id]?.avg_rating ?? 0;
+          return bRating - aRating; // highest first
+        });
         break;
       case 'year':
         results.sort((a, b) => a.yearOpened - b.yearOpened);
@@ -58,7 +88,7 @@ export default function ExploreScreen() {
     }
 
     return results;
-  }, [searchQuery, selectedDivision, sortBy]);
+  }, [searchQuery, selectedDivision, sortBy, stadiumStats]);
 
   const handleStadiumPress = (stadiumId: string) => {
     router.push(`/explore/${stadiumId}`);
@@ -126,6 +156,8 @@ export default function ExploreScreen() {
           <StadiumCard
             stadium={item}
             onPress={() => handleStadiumPress(item.id)}
+            avgRating={stadiumStats[item.id]?.avg_rating}
+            ratingCount={stadiumStats[item.id]?.rating_count}
           />
         )}
         contentContainerStyle={styles.listContent}
