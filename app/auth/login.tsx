@@ -88,21 +88,22 @@ export default function LoginScreen() {
             editable={!loading}
           />
 
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={Colors.accent.coral}
-              style={styles.loader}
-            />
-          ) : (
-            <Button
-              title="Sign In"
-              onPress={handleSignIn}
-              variant="primary"
-              size="lg"
-              fullWidth
-            />
-          )}
+          <View style={styles.buttonWrapper}>
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color={Colors.accent.coral}
+              />
+            ) : (
+              <Button
+                title="Sign In"
+                onPress={handleSignIn}
+                variant="primary"
+                size="lg"
+                fullWidth
+              />
+            )}
+          </View>
 
           <Text style={styles.switchText}>
             Don't have an account?{' '}
@@ -166,8 +167,8 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.text.primary,
   },
-  loader: {
-    marginTop: Spacing.xl,
+  buttonWrapper: {
+    marginTop: Spacing['2xl'],
   },
   error: {
     ...Typography.caption,
