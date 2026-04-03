@@ -119,7 +119,7 @@ export default function HomeScreen() {
     const stadiumName = stadium?.name ?? item.stadium_id;
 
     return (
-      <Card style={styles.feedCard}>
+      <Card style={styles.feedCard} onPress={() => router.push(('/rating/' + item.id) as any)}>
         <View style={styles.feedRow}>
           <Avatar name={item.display_name} size={40} />
           <View style={styles.feedContent}>

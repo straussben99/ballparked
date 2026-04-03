@@ -91,6 +91,10 @@ function RootLayoutNav() {
           name="rate/[stadiumId]"
           options={{ presentation: 'modal', title: 'Rate Stadium' }}
         />
+        <Stack.Screen
+          name="rating/[ratingId]"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <StatusBar style="dark" />
     </>

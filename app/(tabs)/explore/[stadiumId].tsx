@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,10 +21,17 @@ import { getStadiumById } from '@/data/stadiums';
 import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSocialStore } from '@/stores/useSocialStore';
 import { supabase } from '@/lib/supabase';
 import { StadiumHero } from '@/components/stadium/StadiumHero';
 import { StadiumFacts } from '@/components/stadium/StadiumFacts';
 import { CommentSection } from '@/components/social/CommentSection';
+import { RATING_CATEGORIES } from '@/types/rating';
+import { Card } from '@/components/ui/Card';
+import { Avatar } from '@/components/ui/Avatar';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const MINI_PHOTO_SIZE = (SCREEN_WIDTH - Layout.screenPadding * 2 - Layout.cardPadding * 2 - Spacing.sm * 2) / 3;
 
 interface CommunityRating {
   id: string;
@@ -81,7 +89,8 @@ export default function StadiumDetailScreen() {
   const [communityRatings, setCommunityRatings] = useState<CommunityRating[]>([]);
   const [stadiumStats, setStadiumStats] = useState<StadiumStats | null>(null);
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true);
-  const [userPhotos, setUserPhotos] = useState<string[]>([]);
+  const [ratingPhotos, setRatingPhotos] = useState<Record<string, string[]>>({});
+  const followingIds = useSocialStore((state) => state.followingIds);
 
   useEffect(() => {
     if (!stadiumId) return;
@@ -95,7 +104,7 @@ export default function StadiumDetailScreen() {
             .select('*, profiles(display_name, username, avatar_url)')
             .eq('stadium_id', stadiumId)
             .order('created_at', { ascending: false })
-            .limit(10),
+            .limit(20),
           supabase
             .from('stadium_stats')
             .select('*')
@@ -110,17 +119,28 @@ export default function StadiumDetailScreen() {
           setStadiumStats(statsRes.data as StadiumStats);
         }
 
-        // Fetch user-uploaded photos for ratings at this stadium
+        // Fetch photos for all ratings at this stadium in one batch
         const ratingIds = (ratingsRes.data ?? []).map((r: any) => r.id);
+        // Also include current user's rating id if it exists
+        if (rating?.id && !ratingIds.includes(rating.id)) {
+          ratingIds.push(rating.id);
+        }
         if (ratingIds.length > 0) {
           const { data: photosData } = await supabase
             .from('rating_photos')
-            .select('url')
+            .select('rating_id, url')
             .in('rating_id', ratingIds)
-            .limit(20);
+            .limit(60);
 
           if (photosData && photosData.length > 0) {
-            setUserPhotos(photosData.map((p: any) => p.url));
+            const photosMap: Record<string, string[]> = {};
+            for (const p of photosData) {
+              if (!photosMap[p.rating_id]) {
+                photosMap[p.rating_id] = [];
+              }
+              photosMap[p.rating_id].push(p.url);
+            }
+            setRatingPhotos(photosMap);
           }
         }
       } catch (err) {
@@ -131,12 +151,24 @@ export default function StadiumDetailScreen() {
     };
 
     fetchCommunityData();
-  }, [stadiumId]);
+  }, [stadiumId, rating?.id]);
 
   // Filter out current user's rating from community list
   const otherRatings = communityRatings.filter(
     (r) => r.user_id !== user?.id
   );
+
+  // Split into followed vs everyone else
+  const followedRatings = useMemo(
+    () => otherRatings.filter((r) => followingIds.includes(r.user_id)),
+    [otherRatings, followingIds]
+  );
+  const nonFollowedRatings = useMemo(
+    () => otherRatings.filter((r) => !followingIds.includes(r.user_id)),
+    [otherRatings, followingIds]
+  );
+
+  const userRatingPhotos = rating?.id ? (ratingPhotos[rating.id] ?? []) : [];
 
   if (!stadium) {
     return (
@@ -239,80 +271,167 @@ export default function StadiumDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Rating</Text>
           {rating ? (
-            <View style={styles.ratingDisplay}>
-              <Text style={styles.ratingScore}>{rating.overall}</Text>
-              <Text style={styles.ratingLabel}>/ 10</Text>
-            </View>
+            <Card
+              style={styles.yourRatingCard}
+              onPress={() => router.push(('/rating/' + rating.id) as any)}
+            >
+              <View style={styles.yourRatingTop}>
+                <View style={styles.ratingDisplay}>
+                  <Text style={styles.ratingScore}>{rating.overall}</Text>
+                  <Text style={styles.ratingLabel}>/ 10</Text>
+                </View>
+                <View style={styles.miniCategoryRow}>
+                  {RATING_CATEGORIES.map((cat) => {
+                    const scoreMap: Record<string, string> = {
+                      vibes: 'vibes_score',
+                      foodAndBeer: 'food_score',
+                      views: 'views_score',
+                      stadiumIdentity: 'identity_score',
+                      accessibility: 'accessibility_score',
+                    };
+                    const score = (rating as any)[scoreMap[cat.key]] as number;
+                    return (
+                      <View key={cat.key} style={styles.miniCategoryItem}>
+                        <Text style={styles.miniCategoryEmoji}>{cat.emoji}</Text>
+                        <Text style={styles.miniCategoryScore}>{score}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+              {userRatingPhotos.length > 0 && (
+                <View style={styles.miniPhotoGrid}>
+                  {userRatingPhotos.slice(0, 3).map((url, i) => (
+                    <Image
+                      key={i}
+                      source={{ uri: url }}
+                      style={styles.miniPhoto}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ))}
+                </View>
+              )}
+            </Card>
           ) : (
             <Text style={styles.noRatingText}>
               You haven't rated this stadium yet.
             </Text>
           )}
-          {userPhotos.length > 0 && (
-            <View style={styles.userPhotosSection}>
-              <Text style={styles.userPhotosTitle}>{'\uD83D\uDCF8'} Your Photos</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.userPhotosScroll}
-              >
-                {userPhotos.map((url, i) => (
-                  <Image
-                    key={i}
-                    source={{ uri: url }}
-                    style={styles.userPhoto}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-          {rating && (
-            <CommentSection ratingId={rating.id} stadiumId={stadiumId} />
-          )}
         </View>
+
+        {/* From People You Follow */}
+        {followedRatings.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              From People You Follow ({followedRatings.length})
+            </Text>
+            {followedRatings.map((cr) => {
+              const crPhotos = ratingPhotos[cr.id] ?? [];
+              return (
+                <Card
+                  key={cr.id}
+                  style={styles.compactRatingCard}
+                  onPress={() => router.push(('/rating/' + cr.id) as any)}
+                >
+                  <View style={styles.communityHeader}>
+                    <Avatar name={cr.profiles?.display_name ?? 'User'} size={Layout.avatarSize.sm} />
+                    <View style={styles.communityInfo}>
+                      <Text style={styles.communityDisplayName}>
+                        {cr.profiles?.display_name ?? 'User'}
+                      </Text>
+                      {cr.profiles?.username && (
+                        <Text style={styles.communityUsername}>
+                          @{cr.profiles.username}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.communityScoreBadge}>
+                      <Text style={styles.communityScoreText}>{cr.overall}</Text>
+                    </View>
+                  </View>
+                  {crPhotos.length > 0 && (
+                    <View style={styles.miniPhotoGrid}>
+                      {crPhotos.slice(0, 3).map((url, i) => (
+                        <Image
+                          key={i}
+                          source={{ uri: url }}
+                          style={styles.miniPhoto}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </Card>
+              );
+            })}
+          </View>
+        )}
 
         {/* Community Ratings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Community Ratings{otherRatings.length > 0 ? ` (${otherRatings.length})` : ''}
+            Community Ratings{nonFollowedRatings.length > 0 ? ` (${nonFollowedRatings.length})` : ''}
           </Text>
           {isLoadingCommunity ? (
             <ActivityIndicator color={Colors.accent.coral} style={{ marginVertical: Spacing.base }} />
-          ) : otherRatings.length === 0 ? (
+          ) : nonFollowedRatings.length === 0 && followedRatings.length === 0 ? (
             <Text style={styles.noRatingText}>
               Be the first to rate this stadium!
             </Text>
+          ) : nonFollowedRatings.length === 0 ? (
+            <Text style={styles.noRatingText}>
+              No other community ratings yet.
+            </Text>
           ) : (
-            otherRatings.map((cr) => (
-              <View key={cr.id} style={styles.communityCard}>
-                <View style={styles.communityHeader}>
-                  <View style={styles.communityAvatar}>
-                    <Text style={styles.communityAvatarText}>
-                      {getInitials(cr.profiles?.display_name)}
-                    </Text>
-                  </View>
-                  <View style={styles.communityInfo}>
-                    <Text style={styles.communityDisplayName}>
-                      {cr.profiles?.display_name ?? 'User'}
-                    </Text>
-                    {cr.profiles?.username && (
-                      <Text style={styles.communityUsername}>
-                        @{cr.profiles.username}
+            nonFollowedRatings.map((cr) => {
+              const crPhotos = ratingPhotos[cr.id] ?? [];
+              return (
+                <Card
+                  key={cr.id}
+                  style={styles.compactRatingCard}
+                  onPress={() => router.push(('/rating/' + cr.id) as any)}
+                >
+                  <View style={styles.communityHeader}>
+                    <View style={styles.communityAvatar}>
+                      <Text style={styles.communityAvatarText}>
+                        {getInitials(cr.profiles?.display_name)}
                       </Text>
-                    )}
+                    </View>
+                    <View style={styles.communityInfo}>
+                      <Text style={styles.communityDisplayName}>
+                        {cr.profiles?.display_name ?? 'User'}
+                      </Text>
+                      {cr.profiles?.username && (
+                        <Text style={styles.communityUsername}>
+                          @{cr.profiles.username}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.communityScoreBadge}>
+                      <Text style={styles.communityScoreText}>{cr.overall}</Text>
+                    </View>
+                    <Text style={styles.communityTimestamp}>
+                      {getRelativeTime(cr.created_at)}
+                    </Text>
                   </View>
-                  <View style={styles.communityScoreBadge}>
-                    <Text style={styles.communityScoreText}>{cr.overall}</Text>
-                  </View>
-                  <Text style={styles.communityTimestamp}>
-                    {getRelativeTime(cr.created_at)}
-                  </Text>
-                </View>
-                <CommentSection ratingId={cr.id} stadiumId={stadiumId} />
-              </View>
-            ))
+                  {crPhotos.length > 0 && (
+                    <View style={styles.miniPhotoGrid}>
+                      {crPhotos.slice(0, 3).map((url, i) => (
+                        <Image
+                          key={i}
+                          source={{ uri: url }}
+                          style={styles.miniPhoto}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </Card>
+              );
+            })
           )}
         </View>
 
@@ -429,22 +548,42 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text.tertiary,
   },
-  userPhotosSection: {
-    marginTop: Spacing.base,
-  },
-  userPhotosTitle: {
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.semiBold,
-    color: Colors.primary.navy,
+  yourRatingCard: {
     marginBottom: Spacing.sm,
   },
-  userPhotosScroll: {
+  yourRatingTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  miniCategoryRow: {
+    flexDirection: 'row',
     gap: Spacing.sm,
   },
-  userPhoto: {
-    width: 160,
-    height: 120,
-    borderRadius: BorderRadius.md,
+  miniCategoryItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  miniCategoryEmoji: {
+    fontSize: FontSize.md,
+  },
+  miniCategoryScore: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary.navy,
+  },
+  miniPhotoGrid: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  miniPhoto: {
+    width: MINI_PHOTO_SIZE,
+    height: MINI_PHOTO_SIZE,
+    borderRadius: BorderRadius.sm,
+  },
+  compactRatingCard: {
+    marginBottom: Spacing.md,
   },
   communityAvgRow: {
     flexDirection: 'row',

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -22,6 +23,7 @@ import { useRatingStore } from '@/stores/useRatingStore';
 import { getStadiumById } from '@/data/stadiums';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
@@ -134,7 +136,7 @@ export default function ProfileScreen() {
           allRatings.map((r) => {
             const stadium = getStadiumById(r.stadium_id);
             return (
-              <Card key={r.id} style={styles.ratingCard}>
+              <Card key={r.id} style={styles.ratingCard} onPress={() => router.push(('/rating/' + r.id) as any)}>
                 <View style={styles.ratingRow}>
                   <View style={styles.ratingInfo}>
                     <Text style={styles.ratingStadium}>{stadium?.name ?? r.stadium_id}</Text>
