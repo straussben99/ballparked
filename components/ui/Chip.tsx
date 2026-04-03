@@ -22,7 +22,7 @@ export const Chip: React.FC<ChipProps> = ({
       style={[
         styles.base,
         selected
-          ? { backgroundColor: color }
+          ? { backgroundColor: color, borderColor: color, borderWidth: 1.5 }
           : { backgroundColor: Colors.background.white, borderColor: color, borderWidth: 1.5 },
       ]}
       onPress={onPress}
@@ -31,8 +31,9 @@ export const Chip: React.FC<ChipProps> = ({
       <Text
         style={[
           styles.text,
-          { color: selected ? Colors.text.inverse : color },
+          { color: selected ? Colors.text.inverse : Colors.text.primary },
         ]}
+        numberOfLines={1}
       >
         {label}
       </Text>
