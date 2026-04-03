@@ -97,8 +97,8 @@ export const useRatingStore = create<RatingState>()((set, get) => ({
         identity_tags: input.stadiumIdentity.selectedTags,
         accessibility_score: input.accessibility.score,
         accessibility_tags: input.accessibility.selectedTags,
-        overall,
         comment: input.comment ?? null,
+        updated_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
