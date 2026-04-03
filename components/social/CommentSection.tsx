@@ -49,10 +49,14 @@ function getInitials(name?: string): string {
 export function CommentSection({ ratingId, stadiumId }: CommentSectionProps) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const { fetchComments, addComment, deleteComment, getComments, isLoading } =
-    useCommentStore();
-  const { user, isAuthenticated } = useAuthStore();
-  const comments = useCommentStore((s) => s.getComments(ratingId));
+  const fetchComments = useCommentStore((s) => s.fetchComments);
+  const addComment = useCommentStore((s) => s.addComment);
+  const deleteComment = useCommentStore((s) => s.deleteComment);
+  const isLoading = useCommentStore((s) => s.isLoading);
+  const commentsMap = useCommentStore((s) => s.comments);
+  const comments = commentsMap[ratingId] ?? [];
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     fetchComments(ratingId);

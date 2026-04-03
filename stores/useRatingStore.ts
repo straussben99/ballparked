@@ -75,30 +75,20 @@ export const useRatingStore = create<RatingState>()((set, get) => ({
   submitRating: async (stadiumId: string, userId: string, input: RatingInput) => {
     set({ isLoading: true });
     try {
-      const scores = [
-        input.vibes.score,
-        input.foodAndBeer.score,
-        input.views.score,
-        input.stadiumIdentity.score,
-        input.accessibility.score,
-      ];
-      const overall = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
-
       const row = {
         user_id: userId,
         stadium_id: stadiumId,
-        vibes_score: input.vibes.score,
+        vibes_score: Math.round(input.vibes.score),
         vibes_tags: input.vibes.selectedTags,
-        food_score: input.foodAndBeer.score,
+        food_score: Math.round(input.foodAndBeer.score),
         food_tags: input.foodAndBeer.selectedTags,
-        views_score: input.views.score,
+        views_score: Math.round(input.views.score),
         views_tags: input.views.selectedTags,
-        identity_score: input.stadiumIdentity.score,
+        identity_score: Math.round(input.stadiumIdentity.score),
         identity_tags: input.stadiumIdentity.selectedTags,
-        accessibility_score: input.accessibility.score,
+        accessibility_score: Math.round(input.accessibility.score),
         accessibility_tags: input.accessibility.selectedTags,
         comment: input.comment ?? null,
-        updated_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
@@ -124,7 +114,7 @@ export const useRatingStore = create<RatingState>()((set, get) => ({
       }
       useStadiumStore.getState().setVisitedIds(visitedIds);
     } catch (err) {
-      console.error('Failed to submit rating:', err);
+      console.error('Failed to submit rating:', JSON.stringify(err));
       throw err;
     } finally {
       set({ isLoading: false });
