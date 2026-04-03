@@ -1,4 +1,4 @@
-export type ActivityType = 'rating' | 'visit' | 'follow' | 'comment';
+export type ActivityType = 'rating' | 'follow' | 'comment';
 
 export interface ActivityFeedItem {
   id: string;

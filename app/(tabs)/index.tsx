@@ -43,19 +43,17 @@ interface FeedItem {
 
 const MOCK_FEED: FeedItem[] = [
   { id: '1', type: 'rating', userName: 'Sarah M.', stadiumName: 'Fenway Park', rating: 9.2, timestamp: '2h ago' },
-  { id: '2', type: 'visit', userName: 'Jake T.', stadiumName: 'Wrigley Field', timestamp: '5h ago' },
-  { id: '3', type: 'rating', userName: 'Mike R.', stadiumName: 'PNC Park', rating: 8.7, timestamp: '8h ago' },
-  { id: '4', type: 'follow', userName: 'Emma L.', timestamp: '12h ago' },
-  { id: '5', type: 'rating', userName: 'Chris D.', stadiumName: 'Oracle Park', rating: 9.0, timestamp: '1d ago' },
-  { id: '6', type: 'visit', userName: 'Alex J.', stadiumName: 'Dodger Stadium', timestamp: '1d ago' },
+  { id: '3', type: 'rating', userName: 'Mike R.', stadiumName: 'PNC Park', rating: 8.7, timestamp: '5h ago' },
+  { id: '4', type: 'follow', userName: 'Emma L.', timestamp: '8h ago' },
+  { id: '5', type: 'rating', userName: 'Chris D.', stadiumName: 'Oracle Park', rating: 9.0, timestamp: '12h ago' },
+  { id: '7', type: 'rating', userName: 'Jake T.', stadiumName: 'Wrigley Field', rating: 8.4, timestamp: '1d ago' },
+  { id: '8', type: 'rating', userName: 'Alex J.', stadiumName: 'Dodger Stadium', rating: 9.5, timestamp: '1d ago' },
 ];
 
 function getActionText(item: FeedItem): string {
   switch (item.type) {
     case 'rating':
       return `rated ${item.stadiumName} ${item.rating}`;
-    case 'visit':
-      return `visited ${item.stadiumName}`;
     case 'follow':
       return 'started following you';
     default:
