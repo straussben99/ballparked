@@ -8,7 +8,6 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
@@ -58,28 +57,6 @@ export default function StadiumDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <StadiumHero stadium={stadium} />
-
-        {/* Photos */}
-        {stadium.photos && stadium.photos.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{'\uD83D\uDCF7'} Photos</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photosScrollContent}
-            >
-              {stadium.photos.map((photoUrl, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: photoUrl }}
-                  style={styles.photoImage}
-                  contentFit="cover"
-                  transition={200}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         {/* Address */}
         <TouchableOpacity style={styles.addressRow} onPress={openMaps}>
@@ -186,15 +163,6 @@ const styles = StyleSheet.create({
   errorText: {
     ...Typography.h4,
     color: Colors.text.secondary,
-  },
-  photosScrollContent: {
-    paddingHorizontal: Layout.screenPadding,
-    gap: Spacing.sm,
-  },
-  photoImage: {
-    width: 200,
-    height: 140,
-    borderRadius: BorderRadius.md,
   },
   addressRow: {
     flexDirection: 'row',
