@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
@@ -17,66 +19,139 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useSocialStore } from '@/stores/useSocialStore';
 
-interface MockUser {
-  id: string;
-  displayName: string;
+interface UserStat {
+  user_id: string;
+  display_name: string;
   username: string;
-  bio: string;
-  visited: number;
-  favoriteTeam: string;
-}
-
-const MOCK_USERS: MockUser[] = [
-  { id: '1', displayName: 'Sarah Martinez', username: 'sarahm', bio: 'Chasing all 30! 22 down', visited: 22, favoriteTeam: 'NYY' },
-  { id: '2', displayName: 'Jake Thompson', username: 'jaket', bio: 'AL East completionist', visited: 15, favoriteTeam: 'BOS' },
-  { id: '3', displayName: 'Mike Rodriguez', username: 'miker', bio: 'Best food at every park', visited: 28, favoriteTeam: 'CHC' },
-  { id: '4', displayName: 'Emma Liu', username: 'emmal', bio: 'First-timer exploring MLB', visited: 5, favoriteTeam: 'LAD' },
-  { id: '5', displayName: 'Chris Davis', username: 'chrisd', bio: 'Retired ballpark architect', visited: 30, favoriteTeam: 'STL' },
-  { id: '6', displayName: 'Aisha Patel', username: 'aishap', bio: 'Weekend warrior', visited: 12, favoriteTeam: 'SF' },
-  { id: '7', displayName: 'Ryan O\'Brien', username: 'ryano', bio: 'Beer league all-star', visited: 18, favoriteTeam: 'MIL' },
-  { id: '8', displayName: 'Jordan Kim', username: 'jordank', bio: 'Photography at every park', visited: 25, favoriteTeam: 'SD' },
-];
-
-function renderUserCard({ item }: { item: MockUser }) {
-  return (
-    <Card style={styles.userCard}>
-      <View style={styles.userRow}>
-        <Avatar name={item.displayName} size={48} />
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.displayName}</Text>
-          <Text style={styles.userHandle}>@{item.username}</Text>
-          <Text style={styles.userBio} numberOfLines={1}>{item.bio}</Text>
-          <View style={styles.progressRow}>
-            <Text style={styles.visitedLabel}>{item.visited}/30 visited</Text>
-            <View style={styles.progressWrap}>
-              <ProgressBar progress={item.visited / 30} height={6} />
-            </View>
-          </View>
-        </View>
-        <Button title="Follow" onPress={() => {}} variant="primary" size="sm" />
-      </View>
-    </Card>
-  );
+  avatar_url: string | null;
+  bio: string | null;
+  stadiums_visited: number;
+  avg_rating: number;
+  followers_count: number;
+  following_count: number;
 }
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
+  const [users, setUsers] = useState<UserStat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredUsers = useMemo(() => {
-    if (!query.trim()) return MOCK_USERS;
-    const lower = query.toLowerCase();
-    return MOCK_USERS.filter(
-      (u) =>
-        u.displayName.toLowerCase().includes(lower) ||
-        u.username.toLowerCase().includes(lower)
+  const currentUser = useAuthStore((s) => s.user);
+  const followingIds = useSocialStore((s) => s.followingIds);
+  const followUser = useSocialStore((s) => s.followUser);
+  const unfollowUser = useSocialStore((s) => s.unfollowUser);
+  const isFollowing = useSocialStore((s) => s.isFollowing);
+
+  const fetchSuggestedUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .neq('user_id', currentUser?.id ?? '')
+        .limit(20);
+
+      if (error) throw error;
+      setUsers((data as UserStat[]) ?? []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [currentUser?.id]);
+
+  const searchUsers = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      fetchSuggestedUsers();
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const pattern = `%${searchQuery}%`;
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .neq('user_id', currentUser?.id ?? '')
+        .or(`display_name.ilike.${pattern},username.ilike.${pattern}`)
+        .limit(20);
+
+      if (error) throw error;
+      setUsers((data as UserStat[]) ?? []);
+    } catch (err) {
+      console.error('Failed to search users:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser?.id, fetchSuggestedUsers]);
+
+  useEffect(() => {
+    fetchSuggestedUsers();
+  }, [fetchSuggestedUsers]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      searchUsers(query);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [query, searchUsers]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    if (query.trim()) {
+      searchUsers(query);
+    } else {
+      fetchSuggestedUsers();
+    }
+  };
+
+  const handleToggleFollow = (userId: string) => {
+    if (!currentUser) return;
+    if (isFollowing(userId)) {
+      unfollowUser(currentUser.id, userId);
+    } else {
+      followUser(currentUser.id, userId);
+    }
+  };
+
+  function renderUserCard({ item }: { item: UserStat }) {
+    const following = isFollowing(item.user_id);
+    return (
+      <Card style={styles.userCard}>
+        <View style={styles.userRow}>
+          <Avatar name={item.display_name} size={48} />
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{item.display_name}</Text>
+            <Text style={styles.userHandle}>@{item.username}</Text>
+            {item.bio ? (
+              <Text style={styles.userBio} numberOfLines={1}>{item.bio}</Text>
+            ) : null}
+            <View style={styles.progressRow}>
+              <Text style={styles.visitedLabel}>{item.stadiums_visited}/30 visited</Text>
+              <View style={styles.progressWrap}>
+                <ProgressBar progress={item.stadiums_visited / 30} height={6} />
+              </View>
+            </View>
+          </View>
+          <Button
+            title={following ? 'Following' : 'Follow'}
+            onPress={() => handleToggleFollow(item.user_id)}
+            variant={following ? 'outline' : 'primary'}
+            size="sm"
+          />
+        </View>
+      </Card>
     );
-  }, [query]);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>{'\uD83D\uDD0D'} Discover</Text>
+        <Text style={styles.title}>Discover</Text>
       </View>
 
       <View style={styles.searchContainer}>
@@ -102,16 +177,35 @@ export default function SearchScreen() {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Suggested Fans</Text>
+        <Text style={styles.sectionTitle}>
+          {query.trim() ? 'Search Results' : 'Suggested Fans'}
+        </Text>
       </View>
 
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={renderUserCard}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-      />
+      {isLoading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.accent.coral} />
+        </View>
+      ) : (
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.user_id}
+          renderItem={renderUserCard}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color={Colors.text.tertiary} />
+              <Text style={styles.emptyText}>
+                {query.trim() ? 'No fans found' : 'No users yet'}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -199,5 +293,19 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: Layout.tabBarHeight + Spacing.lg,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: Spacing['2xl'],
+  },
+  emptyText: {
+    ...Typography.body,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.md,
   },
 });

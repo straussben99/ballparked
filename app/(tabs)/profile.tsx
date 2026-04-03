@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
@@ -28,11 +29,32 @@ export default function ProfileScreen() {
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
   const allRatings = useRatingStore((s) => s.getAllRatings());
 
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   useEffect(() => {
     if (user) {
       fetchUserRatings(user.id);
+      fetchSocialCounts(user.id);
     }
   }, [user]);
+
+  const fetchSocialCounts = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('followers_count, following_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        setFollowersCount(data.followers_count ?? 0);
+        setFollowingCount(data.following_count ?? 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch social counts:', err);
+    }
+  };
 
   const visitedCount = visitedIds.length;
   const avgRating =
@@ -81,8 +103,13 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{allRatings.length}</Text>
-              <Text style={styles.statLabel}>Ratings</Text>
+              <Text style={styles.statValue}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
         </Card>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -15,7 +18,10 @@ import { Shadows } from '@/constants/shadows';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import type { ActivityType } from '@/types/social';
+import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { getStadiumById } from '@/data/stadiums';
 
 interface TrendingStadium {
   id: string;
@@ -34,31 +40,28 @@ const TRENDING_STADIUMS: TrendingStadium[] = [
 
 interface FeedItem {
   id: string;
-  type: ActivityType;
-  userName: string;
-  stadiumName?: string;
-  rating?: number;
-  timestamp: string;
+  user_id: string;
+  display_name: string;
+  username: string;
+  avatar_url: string | null;
+  stadium_id: string;
+  overall: number;
+  comment: string | null;
+  created_at: string;
 }
 
-const MOCK_FEED: FeedItem[] = [
-  { id: '1', type: 'rating', userName: 'Sarah M.', stadiumName: 'Fenway Park', rating: 9.2, timestamp: '2h ago' },
-  { id: '3', type: 'rating', userName: 'Mike R.', stadiumName: 'PNC Park', rating: 8.7, timestamp: '5h ago' },
-  { id: '4', type: 'follow', userName: 'Emma L.', timestamp: '8h ago' },
-  { id: '5', type: 'rating', userName: 'Chris D.', stadiumName: 'Oracle Park', rating: 9.0, timestamp: '12h ago' },
-  { id: '7', type: 'rating', userName: 'Jake T.', stadiumName: 'Wrigley Field', rating: 8.4, timestamp: '1d ago' },
-  { id: '8', type: 'rating', userName: 'Alex J.', stadiumName: 'Dodger Stadium', rating: 9.5, timestamp: '1d ago' },
-];
-
-function getActionText(item: FeedItem): string {
-  switch (item.type) {
-    case 'rating':
-      return `rated ${item.stadiumName} ${item.rating}`;
-    case 'follow':
-      return 'started following you';
-    default:
-      return '';
-  }
+function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
 }
 
 function renderTrendingCard(stadium: TrendingStadium) {
@@ -77,35 +80,91 @@ function renderTrendingCard(stadium: TrendingStadium) {
   );
 }
 
-function renderFeedItem({ item }: { item: FeedItem }) {
-  return (
-    <Card style={styles.feedCard}>
-      <View style={styles.feedRow}>
-        <Avatar name={item.userName} size={40} />
-        <View style={styles.feedContent}>
-          <Text style={styles.feedText}>
-            <Text style={styles.feedUserName}>{item.userName}</Text>
-            {' '}{getActionText(item)}
-          </Text>
-          <Text style={styles.feedTimestamp}>{item.timestamp}</Text>
+export default function HomeScreen() {
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const router = useRouter();
+
+  const fetchFeed = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase.rpc('get_activity_feed', {
+        requesting_user_id: user.id,
+        feed_limit: 30,
+      });
+
+      if (error) throw error;
+      setFeedItems((data as FeedItem[]) ?? []);
+    } catch (err) {
+      console.error('Failed to fetch feed:', err);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchFeed();
+  }, [fetchFeed]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchFeed();
+  };
+
+  function renderFeedItem({ item }: { item: FeedItem }) {
+    const stadium = getStadiumById(item.stadium_id);
+    const stadiumName = stadium?.name ?? item.stadium_id;
+
+    return (
+      <Card style={styles.feedCard}>
+        <View style={styles.feedRow}>
+          <Avatar name={item.display_name} size={40} />
+          <View style={styles.feedContent}>
+            <Text style={styles.feedText}>
+              <Text style={styles.feedUserName}>{item.display_name}</Text>
+              {' '}rated {stadiumName}
+            </Text>
+            <Text style={styles.feedTimestamp}>{timeAgo(item.created_at)}</Text>
+          </View>
+          <Badge label={item.overall.toFixed(1)} variant="rating" size="sm" />
         </View>
-        {item.type === 'rating' && item.rating != null && (
-          <Badge label={String(item.rating)} variant="rating" size="sm" />
-        )}
+      </Card>
+    );
+  }
+
+  const renderEmptyFeed = () => (
+    <Card style={styles.emptyCard}>
+      <View style={styles.emptyContent}>
+        <Text style={styles.emptyTitle}>Welcome to BallParked!</Text>
+        <Text style={styles.emptySubtitle}>
+          Start by exploring stadiums and following fans!
+        </Text>
+        <View style={styles.emptyButtonWrap}>
+          <Button
+            title="Explore Stadiums"
+            onPress={() => router.push('/(tabs)/explore')}
+            variant="primary"
+            size="md"
+          />
+        </View>
       </View>
     </Card>
   );
-}
 
-export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <FlatList
-        data={MOCK_FEED}
+        data={feedItems}
         keyExtractor={(item) => item.id}
         renderItem={renderFeedItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
         ListHeaderComponent={
           <>
             <View style={styles.header}>
@@ -127,8 +186,15 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recent Activity</Text>
             </View>
+
+            {isLoading && !refreshing && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.accent.coral} />
+              </View>
+            )}
           </>
         }
+        ListEmptyComponent={!isLoading ? renderEmptyFeed : null}
       />
     </SafeAreaView>
   );
@@ -211,5 +277,30 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: Layout.tabBarHeight + Spacing.lg,
+  },
+  loadingContainer: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyCard: {
+    marginHorizontal: Layout.screenPadding,
+  },
+  emptyContent: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  emptyTitle: {
+    ...Typography.h4,
+    color: Colors.primary.navy,
+    marginBottom: Spacing.sm,
+  },
+  emptySubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyButtonWrap: {
+    marginTop: Spacing.sm,
   },
 });

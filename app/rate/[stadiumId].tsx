@@ -8,8 +8,10 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getStadiumById } from '@/data/stadiums';
 import {
@@ -20,6 +22,7 @@ import {
 import { useRatingStore } from '@/stores/useRatingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { RatingCategory } from '@/components/rating/RatingCategory';
+import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { FontSize, FontWeight } from '@/constants/typography';
@@ -43,6 +46,9 @@ export default function RateStadiumModal() {
     accessibility: { ...DEFAULT_CATEGORY_RATING },
   });
 
+  const [selectedPhotos, setSelectedPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+
   useEffect(() => {
     if (existingRating) {
       setRatings({
@@ -65,6 +71,71 @@ export default function RateStadiumModal() {
     setRatings((prev) => ({ ...prev, [key]: rating }));
   };
 
+  const handlePickPhotos = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photo library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsMultipleSelection: true,
+      selectionLimit: 10,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setSelectedPhotos((prev) => [...prev, ...result.assets].slice(0, 10));
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setSelectedPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadPhotos = async (ratingId: string) => {
+    if (selectedPhotos.length === 0 || !user || !stadiumId) return;
+    setUploadingPhotos(true);
+    try {
+      for (const photo of selectedPhotos) {
+        const timestamp = Date.now();
+        const ext = photo.uri.split('.').pop() ?? 'jpg';
+        const filePath = `${user.id}/${stadiumId}/${timestamp}.${ext}`;
+
+        const response = await fetch(photo.uri);
+        const blob = await response.blob();
+        const arrayBuffer = await new Response(blob).arrayBuffer();
+
+        const { error: uploadError } = await supabase.storage
+          .from('rating-photos')
+          .upload(filePath, arrayBuffer, {
+            contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error('Photo upload failed:', uploadError);
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('rating-photos')
+          .getPublicUrl(filePath);
+
+        await supabase.from('rating_photos').insert({
+          rating_id: ratingId,
+          user_id: user.id,
+          url: urlData.publicUrl,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to upload photos:', err);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!stadiumId || !user) return;
     try {
@@ -75,6 +146,15 @@ export default function RateStadiumModal() {
         stadiumIdentity: ratings.stadiumIdentity,
         accessibility: ratings.accessibility,
       });
+
+      // Upload photos if any were selected
+      if (selectedPhotos.length > 0) {
+        const rating = useRatingStore.getState().getRating(stadiumId);
+        if (rating) {
+          await uploadPhotos(rating.id);
+        }
+      }
+
       router.back();
     } catch (err) {
       Alert.alert('Error', 'Failed to submit rating. Please try again.');
@@ -126,20 +206,56 @@ export default function RateStadiumModal() {
         {/* Add Photos Section */}
         <View style={styles.photosSection}>
           <Text style={styles.photosSectionTitle}>
-            {'\uD83D\uDCF8'} Add Photos
+            Add Photos
           </Text>
           <Text style={styles.photosSubtext}>
             Share your experience with photos from your visit
           </Text>
-          <TouchableOpacity
-            style={styles.addPhotoButton}
-            onPress={() => Alert.alert('Coming Soon', 'Photo uploads will be available when the backend is connected!')}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="camera-outline" size={32} color={Colors.accent.coral} />
-            <Text style={styles.addPhotoText}>Tap to add photos</Text>
-            <Text style={styles.addPhotoSubtext}>Up to 10 photos per visit</Text>
-          </TouchableOpacity>
+
+          {selectedPhotos.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.photoPreviewRow}
+              contentContainerStyle={styles.photoPreviewContent}
+            >
+              {selectedPhotos.map((photo, index) => (
+                <View key={`${photo.uri}-${index}`} style={styles.photoThumb}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                  <TouchableOpacity
+                    style={styles.photoRemoveButton}
+                    onPress={() => handleRemovePhoto(index)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close-circle" size={22} color={Colors.accent.coral} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {selectedPhotos.length < 10 && (
+            <TouchableOpacity
+              style={styles.addPhotoButton}
+              onPress={handlePickPhotos}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="camera-outline" size={32} color={Colors.accent.coral} />
+              <Text style={styles.addPhotoText}>
+                {selectedPhotos.length > 0 ? 'Add more photos' : 'Tap to add photos'}
+              </Text>
+              <Text style={styles.addPhotoSubtext}>
+                {selectedPhotos.length}/10 photos selected
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {uploadingPhotos && (
+            <View style={styles.uploadingRow}>
+              <ActivityIndicator size="small" color={Colors.accent.coral} />
+              <Text style={styles.uploadingText}>Uploading photos...</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.overallCard}>
@@ -290,6 +406,41 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text.tertiary,
     marginTop: Spacing.xs,
+  },
+  photoPreviewRow: {
+    marginBottom: Spacing.md,
+  },
+  photoPreviewContent: {
+    gap: Spacing.sm,
+  },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoRemoveButton: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: Colors.background.white,
+    borderRadius: 11,
+  },
+  uploadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  uploadingText: {
+    fontSize: FontSize.sm,
+    color: Colors.text.secondary,
   },
   errorContainer: {
     flex: 1,

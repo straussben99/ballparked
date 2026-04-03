@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useRatingStore } from '@/stores/useRatingStore';
+import { useSocialStore } from '@/stores/useSocialStore';
 import { Colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -32,12 +33,14 @@ export default function RootLayout() {
   const [initializing, setInitializing] = useState(true);
   const setSession = useAuthStore((s) => s.setSession);
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
+  const fetchFollowing = useSocialStore((s) => s.fetchFollowing);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         fetchUserRatings(session.user.id);
+        fetchFollowing(session.user.id);
       }
       setInitializing(false);
       SplashScreen.hideAsync();
@@ -49,6 +52,7 @@ export default function RootLayout() {
       setSession(session);
       if (session?.user) {
         fetchUserRatings(session.user.id);
+        fetchFollowing(session.user.id);
       }
     });
 
