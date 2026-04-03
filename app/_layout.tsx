@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,20 +9,35 @@ import { Colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync();
 
+function useProtectedRoute() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    const inAuthGroup = segments[0] === 'auth';
+
+    if (!isAuthenticated && !inAuthGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/auth/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      // Redirect to home if authenticated but on auth screen
+      router.replace('/');
+    }
+  }, [isAuthenticated, segments]);
+}
+
 export default function RootLayout() {
   const [initializing, setInitializing] = useState(true);
   const setSession = useAuthStore((s) => s.setSession);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
-    // Check for existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setInitializing(false);
       SplashScreen.hideAsync();
     });
 
-    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -41,6 +56,12 @@ export default function RootLayout() {
     );
   }
 
+  return <RootLayoutNav />;
+}
+
+function RootLayoutNav() {
+  useProtectedRoute();
+
   return (
     <>
       <Stack
@@ -48,21 +69,16 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: Colors.background.cream },
         }}
       >
-        {isAuthenticated ? (
-          <>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="stadium/[stadiumId]"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="rate/[stadiumId]"
-              options={{ presentation: 'modal', title: 'Rate Stadium' }}
-            />
-          </>
-        ) : (
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-        )}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="stadium/[stadiumId]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="rate/[stadiumId]"
+          options={{ presentation: 'modal', title: 'Rate Stadium' }}
+        />
       </Stack>
       <StatusBar style="dark" />
     </>
