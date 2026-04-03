@@ -9,8 +9,9 @@ export default function ExploreLayout() {
         options={{
           headerTransparent: true,
           headerTitle: '',
+          headerBackTitle: 'Back',
           headerBackVisible: true,
-          headerTintColor: '#1A1A2E',
+          headerTintColor: '#FFFFFF',
         }}
       />
     </Stack>
