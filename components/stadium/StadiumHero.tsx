@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/colors';
 import { Layout, Spacing } from '@/constants/spacing';
 import { FontSize, FontWeight } from '@/constants/typography';
+import { getStadiumImage } from '@/data/stadium-images';
 import type { Stadium } from '@/types/stadium';
 
 interface StadiumHeroProps {
@@ -12,15 +14,24 @@ interface StadiumHeroProps {
 
 export const StadiumHero: React.FC<StadiumHeroProps> = ({ stadium }) => {
   const divisionColor = Colors.division[stadium.division] ?? Colors.primary.navyLight;
+  const image = getStadiumImage(stadium.id);
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={[divisionColor, Colors.primary.navyLight]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.background}
-      />
+      {image ? (
+        <Image
+          source={image}
+          style={styles.background}
+          contentFit="cover"
+        />
+      ) : (
+        <LinearGradient
+          colors={[divisionColor, Colors.primary.navyLight]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.background}
+        />
+      )}
       <LinearGradient
         colors={['transparent', 'rgba(27,42,74,0.85)']}
         style={styles.overlay}
