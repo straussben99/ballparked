@@ -22,6 +22,7 @@ import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocialStore } from '@/stores/useSocialStore';
+import { useWishlistStore } from '@/stores/useWishlistStore';
 import { supabase } from '@/lib/supabase';
 import { StadiumHero } from '@/components/stadium/StadiumHero';
 import { StadiumFacts } from '@/components/stadium/StadiumFacts';
@@ -51,6 +52,45 @@ interface StadiumStats {
   avg_rating: number;
   rating_count: number;
 }
+
+function WishlistButton({ stadiumId }: { stadiumId: string }) {
+  const user = useAuthStore((s) => s.user);
+  const isOnWishlist = useWishlistStore((s) => s.isOnWishlist(stadiumId));
+  const addToWishlist = useWishlistStore((s) => s.addToWishlist);
+  const removeFromWishlist = useWishlistStore((s) => s.removeFromWishlist);
+
+  const toggle = () => {
+    if (!user) return;
+    if (isOnWishlist) {
+      removeFromWishlist(user.id, stadiumId);
+    } else {
+      addToWishlist(user.id, stadiumId);
+    }
+  };
+
+  return (
+    <TouchableOpacity style={wishlistStyles.button} onPress={toggle}>
+      <Ionicons
+        name={isOnWishlist ? 'heart' : 'heart-outline'}
+        size={22}
+        color={isOnWishlist ? Colors.accent.coral : Colors.text.secondary}
+      />
+    </TouchableOpacity>
+  );
+}
+
+const wishlistStyles = StyleSheet.create({
+  button: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.white,
+    borderWidth: 1,
+    borderColor: Colors.card.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 function getRelativeTime(dateString: string): string {
   const now = new Date();
@@ -441,12 +481,15 @@ export default function StadiumDetailScreen() {
 
       {/* Floating Bottom Bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.rateButton} onPress={handleRate}>
-          <Ionicons name="star-outline" size={20} color={Colors.text.inverse} />
-          <Text style={styles.rateButtonText}>
-            {rating ? 'Update Rating' : 'Rate This Stadium'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.bottomBarRow}>
+          <WishlistButton stadiumId={stadiumId as string} />
+          <TouchableOpacity style={styles.rateButton} onPress={handleRate}>
+            <Ionicons name="star-outline" size={20} color={Colors.text.inverse} />
+            <Text style={styles.rateButtonText}>
+              {rating ? 'Update Rating' : 'Rate This Stadium'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -667,7 +710,13 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.card.border,
     ...Shadows.md,
   },
+  bottomBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
   rateButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

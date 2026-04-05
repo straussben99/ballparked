@@ -6,6 +6,8 @@ export interface UserProfile {
   avatarUrl?: string;
   bio?: string;
   favoriteTeam?: string;
+  favoritePark?: string;
+  hasOnboarded?: boolean;
   joinedAt: string;
   stadiumsVisited: number;
   averageRating: number;

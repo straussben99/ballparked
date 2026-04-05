@@ -21,12 +21,12 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
 import { getStadiumById } from '@/data/stadiums';
+import { WishlistSection } from '@/components/profile/WishlistSection';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
-  const signOut = useAuthStore((s) => s.signOut);
   const visitedIds = useStadiumStore((s) => s.visitedIds);
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
   const ratings = useRatingStore((s) => s.ratings);
@@ -74,13 +74,13 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Settings icon + Sign out */}
+        {/* Settings */}
         <View style={styles.settingsRow}>
           <Ionicons
-            name="log-out-outline"
+            name="settings-outline"
             size={24}
             color={Colors.text.secondary}
-            onPress={signOut}
+            onPress={() => router.push('/settings' as any)}
           />
         </View>
 
@@ -158,6 +158,12 @@ export default function ProfileScreen() {
             </View>
           </Card>
         )}
+
+        {/* Bucket List */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Bucket List</Text>
+        </View>
+        <WishlistSection />
 
         {/* Favorite Team */}
         {profile.favorite_team && (

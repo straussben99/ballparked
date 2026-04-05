@@ -8,9 +8,12 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getStadiumImage } from '@/data/stadium-images';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { FontSize, FontWeight, Typography } from '@/constants/typography';
@@ -65,18 +68,22 @@ function timeAgo(dateString: string): string {
 }
 
 function renderTrendingCard(stadium: TrendingStadium) {
-  const divisionColor = Colors.division[stadium.division] ?? Colors.primary.navy;
+  const image = getStadiumImage(stadium.id);
   return (
-    <LinearGradient
+    <ImageBackground
       key={stadium.id}
-      colors={[divisionColor, Colors.primary.navyDark]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      source={image}
       style={styles.trendingCard}
+      imageStyle={{ borderRadius: BorderRadius.md }}
     >
-      <Text style={styles.trendingName} numberOfLines={2}>{stadium.name}</Text>
-      <Text style={styles.trendingTeam}>{stadium.team}</Text>
-    </LinearGradient>
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={styles.trendingOverlay}
+      >
+        <Text style={styles.trendingName} numberOfLines={2}>{stadium.name}</Text>
+        <Text style={styles.trendingTeam}>{stadium.team}</Text>
+      </LinearGradient>
+    </ImageBackground>
   );
 }
 
@@ -183,6 +190,18 @@ export default function HomeScreen() {
               {TRENDING_STADIUMS.map(renderTrendingCard)}
             </ScrollView>
 
+            {/* Leaderboard Teaser */}
+            <Card style={styles.leaderboardTeaser} onPress={() => router.push('/leaderboard' as any)}>
+              <View style={styles.leaderboardRow}>
+                <Ionicons name="trophy" size={22} color={Colors.accent.orange} />
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <Text style={styles.leaderboardTitle}>Leaderboard</Text>
+                  <Text style={styles.leaderboardSub}>See who's visited the most stadiums</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.text.tertiary} />
+              </View>
+            </Card>
+
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recent Activity</Text>
             </View>
@@ -238,9 +257,31 @@ const styles = StyleSheet.create({
     width: 140,
     height: 100,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    justifyContent: 'flex-end',
+    overflow: 'hidden',
     ...Shadows.md,
+  },
+  trendingOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  leaderboardTeaser: {
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: Spacing.lg,
+  },
+  leaderboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  leaderboardTitle: {
+    ...Typography.bodyBold,
+    color: Colors.primary.navy,
+  },
+  leaderboardSub: {
+    ...Typography.small,
+    color: Colors.text.secondary,
+    marginTop: 2,
   },
   trendingName: {
     ...Typography.smallBold,
