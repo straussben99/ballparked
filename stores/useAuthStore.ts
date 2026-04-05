@@ -62,18 +62,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   updateProfile: async (updates: Partial<UserProfile>) => {
     const user = get().user;
-    if (!user) return;
+    if (!user) throw new Error('Not authenticated');
 
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', user.id);
 
-    if (!error) {
-      set((state) => ({
-        profile: state.profile ? { ...state.profile, ...updates } : null,
-      }));
+    if (error) {
+      throw new Error(error.message);
     }
+
+    set((state) => ({
+      profile: state.profile ? { ...state.profile, ...updates } : null,
+    }));
   },
 
   signOut: async () => {

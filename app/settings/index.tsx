@@ -52,7 +52,7 @@ export default function SettingsScreen() {
         <SettingsRow
           icon="person-outline"
           label="Edit Profile"
-          onPress={() => router.push('/edit-profile')}
+          onPress={() => router.push('/settings/edit-profile')}
         />
       </View>
 
@@ -91,6 +91,16 @@ export default function SettingsScreen() {
           onPress={handleSignOut}
           color={Colors.semantic.error}
           showChevron={false}
+        />
+      </View>
+
+      {/* Danger Zone */}
+      <View style={[styles.section, { marginTop: Spacing.md }]}>
+        <SettingsRow
+          icon="trash-outline"
+          label="Delete Account"
+          onPress={() => router.push('/settings/delete-account')}
+          color={Colors.semantic.error}
         />
       </View>
 
