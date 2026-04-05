@@ -115,19 +115,11 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="settings"
-          options={{ title: 'Settings' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="edit-profile"
           options={{ title: 'Edit Profile' }}
-        />
-        <Stack.Screen
-          name="terms"
-          options={{ title: 'Terms of Use' }}
-        />
-        <Stack.Screen
-          name="privacy"
-          options={{ title: 'Privacy Policy' }}
         />
         <Stack.Screen
           name="leaderboard"
