@@ -16,11 +16,13 @@ import { FontSize, FontWeight, Typography } from '@/constants/typography';
 import { Shadows } from '@/constants/shadows';
 import { supabase } from '@/lib/supabase';
 import { STADIUMS, getStadiumsByDivision, searchStadiums } from '@/data/stadiums';
+import { HISTORIC_STADIUMS } from '@/data/historic-stadiums';
 import { DivisionFilter } from '@/components/stadium/DivisionFilter';
 import { StadiumCard } from '@/components/stadium/StadiumCard';
 import type { Stadium, Division } from '@/types/stadium';
 
 type SortKey = 'name' | 'rating' | 'year';
+type StadiumTab = 'current' | 'historic';
 
 interface StadiumStatsMap {
   [stadiumId: string]: { avg_rating: number; rating_count: number };
@@ -32,6 +34,7 @@ export default function ExploreScreen() {
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>('name');
   const [stadiumStats, setStadiumStats] = useState<StadiumStatsMap>({});
+  const [activeTab, setActiveTab] = useState<StadiumTab>('current');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -55,19 +58,40 @@ export default function ExploreScreen() {
   }, []);
 
   const filteredStadiums = useMemo(() => {
+    const sourceStadiums: Stadium[] = activeTab === 'current' ? STADIUMS : [...HISTORIC_STADIUMS];
     let results: Stadium[];
 
-    if (searchQuery.trim()) {
-      results = searchStadiums(searchQuery.trim());
-    } else if (selectedDivision) {
-      results = getStadiumsByDivision(selectedDivision as Division);
-    } else {
-      results = [...STADIUMS];
-    }
+    if (activeTab === 'current') {
+      if (searchQuery.trim()) {
+        results = searchStadiums(searchQuery.trim());
+      } else if (selectedDivision) {
+        results = getStadiumsByDivision(selectedDivision as Division);
+      } else {
+        results = [...STADIUMS];
+      }
 
-    // Apply division filter even when searching
-    if (selectedDivision && searchQuery.trim()) {
-      results = results.filter((s) => s.division === selectedDivision);
+      // Apply division filter even when searching
+      if (selectedDivision && searchQuery.trim()) {
+        results = results.filter((s) => s.division === selectedDivision);
+      }
+    } else {
+      results = sourceStadiums;
+
+      if (searchQuery.trim()) {
+        const lowerQuery = searchQuery.trim().toLowerCase();
+        results = results.filter(
+          (s) =>
+            s.name.toLowerCase().includes(lowerQuery) ||
+            s.team.toLowerCase().includes(lowerQuery) ||
+            s.city.toLowerCase().includes(lowerQuery) ||
+            s.state.toLowerCase().includes(lowerQuery) ||
+            s.teamAbbr.toLowerCase().includes(lowerQuery)
+        );
+      }
+
+      if (selectedDivision) {
+        results = results.filter((s) => s.division === selectedDivision);
+      }
     }
 
     // Sort
@@ -88,7 +112,7 @@ export default function ExploreScreen() {
     }
 
     return results;
-  }, [searchQuery, selectedDivision, sortBy, stadiumStats]);
+  }, [searchQuery, selectedDivision, sortBy, stadiumStats, activeTab]);
 
   const handleStadiumPress = (stadiumId: string) => {
     router.push(`/explore/${stadiumId}`);
@@ -110,7 +134,28 @@ export default function ExploreScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Explore {'\u26BE'}</Text>
-        <Text style={styles.subtitle}>All 30 MLB Stadiums</Text>
+        <Text style={styles.subtitle}>
+          {activeTab === 'current' ? 'All 30 MLB Stadiums' : 'Historic Stadiums'}
+        </Text>
+      </View>
+
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          onPress={() => { setActiveTab('current'); setSelectedDivision(null); }}
+          style={[styles.tabButton, activeTab === 'current' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, activeTab === 'current' && styles.tabTextActive]}>
+            Current ({STADIUMS.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { setActiveTab('historic'); setSelectedDivision(null); }}
+          style={[styles.tabButton, activeTab === 'historic' && styles.tabButtonActive]}
+        >
+          <Text style={[styles.tabText, activeTab === 'historic' && styles.tabTextActive]}>
+            Historic ({HISTORIC_STADIUMS.length})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -183,6 +228,30 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Layout.screenPadding,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  tabButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.white,
+    ...Shadows.sm,
+  },
+  tabButtonActive: {
+    backgroundColor: Colors.primary.navy,
+  },
+  tabText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.text.secondary,
+  },
+  tabTextActive: {
+    color: Colors.text.inverse,
   },
   searchContainer: {
     flexDirection: 'row',
