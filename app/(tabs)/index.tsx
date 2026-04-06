@@ -67,23 +67,24 @@ function timeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-function renderTrendingCard(stadium: TrendingStadium) {
+function TrendingCard({ stadium, onPress }: { stadium: TrendingStadium; onPress: () => void }) {
   const image = getStadiumImage(stadium.id);
   return (
-    <ImageBackground
-      key={stadium.id}
-      source={image}
-      style={styles.trendingCard}
-      imageStyle={{ borderRadius: BorderRadius.md }}
-    >
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
-        style={styles.trendingOverlay}
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+      <ImageBackground
+        source={image}
+        style={styles.trendingCard}
+        imageStyle={{ borderRadius: BorderRadius.md }}
       >
-        <Text style={styles.trendingName} numberOfLines={2}>{stadium.name}</Text>
-        <Text style={styles.trendingTeam}>{stadium.team}</Text>
-      </LinearGradient>
-    </ImageBackground>
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          style={styles.trendingOverlay}
+        >
+          <Text style={styles.trendingName} numberOfLines={2}>{stadium.name}</Text>
+          <Text style={styles.trendingTeam}>{stadium.team}</Text>
+        </LinearGradient>
+      </ImageBackground>
+    </TouchableOpacity>
   );
 }
 
@@ -187,7 +188,9 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.trendingRow}
             >
-              {TRENDING_STADIUMS.map(renderTrendingCard)}
+              {TRENDING_STADIUMS.map((s) => (
+                <TrendingCard key={s.id} stadium={s} onPress={() => router.push(`/explore/${s.id}` as any)} />
+              ))}
             </ScrollView>
 
             {/* Leaderboard Teaser */}
