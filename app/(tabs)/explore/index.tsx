@@ -133,10 +133,22 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>Explore {'\u26BE'}</Text>
-        <Text style={styles.subtitle}>
-          {activeTab === 'current' ? 'All 30 MLB Stadiums' : 'Historic Stadiums'}
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Explore {'\u26BE'}</Text>
+            <Text style={styles.subtitle}>
+              {activeTab === 'current' ? 'All 30 MLB Stadiums' : 'Historic Stadiums'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.compareButton}
+            onPress={() => router.push('/compare' as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="swap-horizontal" size={16} color={Colors.text.inverse} />
+            <Text style={styles.compareButtonText}>Compare</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.tabRow}>
@@ -219,6 +231,10 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.base,
     paddingBottom: Spacing.md,
   },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   title: {
     ...Typography.h2,
     color: Colors.primary.navy,
@@ -228,6 +244,21 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
+  },
+  compareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.accent.coral,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+  },
+  compareButtonText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.inverse,
   },
   tabRow: {
     flexDirection: 'row',

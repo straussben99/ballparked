@@ -123,7 +123,7 @@ export default function SearchScreen() {
     return (
       <Card style={styles.userCard}>
         <View style={styles.userRow}>
-          <Avatar name={item.display_name} size={48} />
+          <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={48} />
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{item.display_name}</Text>
             <Text style={styles.userHandle}>@{item.username}</Text>

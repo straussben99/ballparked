@@ -86,7 +86,7 @@ export default function ProfileScreen() {
 
         {/* Avatar + Identity */}
         <View style={styles.profileCenter}>
-          <Avatar name={profile.display_name} size={Layout.avatarSize.xl} />
+          <Avatar name={profile.display_name} uri={profile.avatar_url ?? undefined} size={Layout.avatarSize.xl} />
           <Text style={styles.displayName}>{profile.display_name}</Text>
           <Text style={styles.username}>@{profile.username}</Text>
           {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}

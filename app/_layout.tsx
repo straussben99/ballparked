@@ -127,6 +127,14 @@ function RootLayoutNav() {
           name="leaderboard"
           options={{ title: 'Leaderboard' }}
         />
+        <Stack.Screen
+          name="compare"
+          options={{ title: 'Compare Stadiums', headerShown: false }}
+        />
+        <Stack.Screen
+          name="best-of"
+          options={{ title: 'Best Of', headerShown: false }}
+        />
       </Stack>
       <StatusBar style="dark" />
     </>

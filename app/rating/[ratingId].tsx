@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { getStadiumById } from '@/data/stadiums';
 import { getStadiumImage } from '@/data/stadium-images';
 import { RATING_CATEGORIES } from '@/types/rating';
+import { Avatar } from '@/components/ui/Avatar';
 import { CommentSection } from '@/components/social/CommentSection';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -78,16 +79,6 @@ function getRelativeTime(dateString: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   if (diffWeeks < 4) return `${diffWeeks}w ago`;
   return date.toLocaleDateString();
-}
-
-function getInitials(name?: string): string {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export default function RatingDetailScreen() {
@@ -206,11 +197,11 @@ export default function RatingDetailScreen() {
 
         {/* User Row */}
         <View style={styles.userRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {getInitials(rating.profiles?.display_name)}
-            </Text>
-          </View>
+          <Avatar
+            name={rating.profiles?.display_name ?? 'User'}
+            uri={rating.profiles?.avatar_url ?? undefined}
+            size={Layout.avatarSize.md}
+          />
           <View style={styles.userInfo}>
             <Text style={styles.displayName}>
               {rating.profiles?.display_name ?? 'User'}
@@ -372,19 +363,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.screenPadding,
     paddingVertical: Spacing.base,
     gap: Spacing.md,
-  },
-  avatar: {
-    width: Layout.avatarSize.md,
-    height: Layout.avatarSize.md,
-    borderRadius: Layout.avatarSize.md / 2,
-    backgroundColor: Colors.primary.navyLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: Colors.text.inverse,
   },
   userInfo: {
     flex: 1,

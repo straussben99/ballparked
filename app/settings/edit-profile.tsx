@@ -11,12 +11,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { Typography, FontSize, FontWeight } from '@/constants/typography';
 import { Shadows } from '@/constants/shadows';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 
@@ -32,6 +34,7 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [favoriteTeam, setFavoriteTeam] = useState(profile?.favorite_team ?? '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,8 +85,59 @@ export default function EditProfileScreen() {
     }
   };
 
-  const handleChangePhoto = () => {
-    Alert.alert('Coming soon', 'Photo upload will be available in a future update.');
+  const handleChangePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const userId = profile?.id;
+      if (!userId) {
+        setError('Not authenticated');
+        return;
+      }
+
+      setIsUploadingPhoto(true);
+      setError(null);
+
+      const asset = result.assets[0];
+      const fileExt = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const filePath = `avatars/${userId}.${fileExt}`;
+
+      // Read the file as a blob for upload
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+
+      // Upload to Supabase storage (upsert to replace existing)
+      const { error: uploadError } = await supabase.storage
+        .from('rating-photos')
+        .upload(filePath, blob, {
+          contentType: asset.mimeType ?? 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('rating-photos')
+        .getPublicUrl(filePath);
+
+      // Append cache-buster so the image refreshes
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      await updateProfile({ avatar_url: publicUrl });
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   return (
@@ -99,13 +153,22 @@ export default function EditProfileScreen() {
       >
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <Avatar
-            uri={profile?.avatar_url ?? undefined}
-            size={Layout.avatarSize.xl}
-            name={displayName || 'U'}
-          />
-          <TouchableOpacity onPress={handleChangePhoto} style={styles.changePhotoBtn}>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
+          <View>
+            <Avatar
+              uri={profile?.avatar_url ?? undefined}
+              size={Layout.avatarSize.xl}
+              name={displayName || 'U'}
+            />
+            {isUploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="small" color={Colors.text.inverse} />
+              </View>
+            )}
+          </View>
+          <TouchableOpacity onPress={handleChangePhoto} disabled={isUploadingPhoto} style={styles.changePhotoBtn}>
+            <Text style={styles.changePhotoText}>
+              {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -216,6 +279,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing['2xl'],
     marginTop: Spacing.base,
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: Layout.avatarSize.xl / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   changePhotoBtn: {
     marginTop: Spacing.md,

@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Card, Badge } from '@/components/ui';
 import { Colors } from '@/constants/colors';
-import { Spacing } from '@/constants/spacing';
+import { Spacing, BorderRadius } from '@/constants/spacing';
 import { Typography, FontSize, FontWeight } from '@/constants/typography';
 import { useStadiumStore } from '@/stores/useStadiumStore';
+import { getStadiumImage } from '@/data/stadium-images';
 import type { Stadium } from '@/types/stadium';
 
 interface StadiumCardProps {
@@ -18,9 +20,24 @@ interface StadiumCardProps {
 export const StadiumCard: React.FC<StadiumCardProps> = ({ stadium, onPress, avgRating, ratingCount }) => {
   const isVisited = useStadiumStore((state) => state.isVisited(stadium.id));
 
+  const stadiumImage = getStadiumImage(stadium.id);
+
   return (
     <Card onPress={onPress} style={styles.card}>
       <View style={styles.row}>
+        {stadiumImage ? (
+          <Image source={stadiumImage} style={styles.thumbnail} contentFit="cover" />
+        ) : (
+          <View
+            style={[
+              styles.thumbnail,
+              styles.thumbnailPlaceholder,
+              { backgroundColor: Colors.division[stadium.division] || Colors.primary.navy },
+            ]}
+          >
+            <Ionicons name="baseball-outline" size={24} color="rgba(255,255,255,0.7)" />
+          </View>
+        )}
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>
             {stadium.name}
@@ -69,6 +86,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: BorderRadius.sm,
+    marginRight: Spacing.md,
+  },
+  thumbnailPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   info: {
     flex: 1,

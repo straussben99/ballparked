@@ -411,7 +411,7 @@ export default function StadiumDetailScreen() {
                   onPress={() => router.push(('/rating/' + cr.id) as any)}
                 >
                   <View style={styles.communityHeader}>
-                    <Avatar name={cr.profiles?.display_name ?? 'User'} size={Layout.avatarSize.sm} />
+                    <Avatar name={cr.profiles?.display_name ?? 'User'} uri={cr.profiles?.avatar_url ?? undefined} size={Layout.avatarSize.sm} />
                     <View style={styles.communityInfo}>
                       <Text style={styles.communityDisplayName}>
                         {cr.profiles?.display_name ?? 'User'}

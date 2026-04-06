@@ -128,7 +128,7 @@ export default function HomeScreen() {
     return (
       <Card style={styles.feedCard} onPress={() => router.push(('/rating/' + item.id) as any)}>
         <View style={styles.feedRow}>
-          <Avatar name={item.display_name} size={40} />
+          <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={40} />
           <View style={styles.feedContent}>
             <Text style={styles.feedText}>
               <Text style={styles.feedUserName}>{item.display_name}</Text>
@@ -197,6 +197,30 @@ export default function HomeScreen() {
                 <View style={{ flex: 1, marginLeft: Spacing.md }}>
                   <Text style={styles.leaderboardTitle}>Leaderboard</Text>
                   <Text style={styles.leaderboardSub}>See who's visited the most stadiums</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.text.tertiary} />
+              </View>
+            </Card>
+
+            {/* Best Of Rankings */}
+            <Card style={styles.leaderboardTeaser} onPress={() => router.push('/best-of' as any)}>
+              <View style={styles.leaderboardRow}>
+                <Text style={{ fontSize: 20 }}>{'\uD83C\uDFC6'}</Text>
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <Text style={styles.leaderboardTitle}>Best Of</Text>
+                  <Text style={styles.leaderboardSub}>Top stadiums ranked by the community</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.text.tertiary} />
+              </View>
+            </Card>
+
+            {/* Compare Stadiums */}
+            <Card style={styles.leaderboardTeaser} onPress={() => router.push('/compare' as any)}>
+              <View style={styles.leaderboardRow}>
+                <Ionicons name="swap-horizontal" size={22} color={Colors.accent.coral} />
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <Text style={styles.leaderboardTitle}>Compare Stadiums</Text>
+                  <Text style={styles.leaderboardSub}>Side-by-side stadium matchups</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Colors.text.tertiary} />
               </View>
