@@ -235,6 +235,14 @@ export default function StadiumDetailScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Back Button - fixed over hero */}
+      <TouchableOpacity
+        style={styles.heroBackButton}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+      </TouchableOpacity>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -535,6 +543,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.cream,
+  },
+  heroBackButton: {
+    position: 'absolute',
+    top: 54,
+    left: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
   scrollView: {
     flex: 1,
