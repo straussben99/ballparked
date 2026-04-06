@@ -33,7 +33,6 @@ export const Chip: React.FC<ChipProps> = ({
           styles.text,
           { color: selected ? Colors.text.inverse : Colors.text.primary },
         ]}
-        numberOfLines={1}
       >
         {label}
       </Text>
@@ -44,12 +43,15 @@ export const Chip: React.FC<ChipProps> = ({
 const styles = StyleSheet.create({
   base: {
     borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm + 2,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.semiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

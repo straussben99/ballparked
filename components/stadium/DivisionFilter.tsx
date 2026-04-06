@@ -51,6 +51,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    gap: Spacing.md,
+    gap: 10,
+    alignItems: 'center',
+    minHeight: 44,
   },
 });
