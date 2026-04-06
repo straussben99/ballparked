@@ -1,4 +1,5 @@
 import { Stadium, Division, League } from '../types/stadium';
+import { HISTORIC_STADIUMS } from './historic-stadiums';
 
 export const STADIUMS: Stadium[] = [
   // ============================================================
@@ -941,7 +942,8 @@ const LEGACY_IDS: Record<string, string> = {
 
 export function getStadiumById(id: string): Stadium | undefined {
   const resolvedId = LEGACY_IDS[id] ?? id;
-  return STADIUMS.find((stadium) => stadium.id === resolvedId);
+  return STADIUMS.find((stadium) => stadium.id === resolvedId)
+    ?? HISTORIC_STADIUMS.find((stadium) => stadium.id === resolvedId);
 }
 
 export function getStadiumsByDivision(division: Division): Stadium[] {

@@ -293,6 +293,30 @@ export default function StadiumDetailScreen() {
           <StadiumFacts stadium={stadium} />
         </View>
 
+        {/* Historic Stadium Info */}
+        {'yearClosed' in stadium && (
+          <View style={styles.section}>
+            <View style={styles.historicBadgeRow}>
+              <View style={styles.historicBadge}>
+                <Ionicons name="time-outline" size={16} color={Colors.text.inverse} />
+                <Text style={styles.historicBadgeText}>Historic Ballpark</Text>
+              </View>
+            </View>
+            <Card style={styles.historicCard}>
+              <View style={styles.historicRow}>
+                <View style={[styles.historicDot, { backgroundColor: Colors.accent.coral }]} />
+                <Text style={styles.historicLabel}>Closed</Text>
+                <Text style={styles.historicValue}>{(stadium as any).yearClosed}</Text>
+              </View>
+              <View style={styles.historicDivider} />
+              <View style={styles.historicRow}>
+                <Ionicons name="information-circle-outline" size={18} color={Colors.text.secondary} />
+                <Text style={styles.historicStatusText}>{(stadium as any).currentStatus}</Text>
+              </View>
+            </Card>
+          </View>
+        )}
+
         {/* Notable Features */}
         {stadium.notableFeatures.length > 0 && (
           <View style={styles.section}>
@@ -567,6 +591,57 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: FontWeight.bold,
     color: Colors.text.inverse,
+  },
+  historicBadgeRow: {
+    marginBottom: Spacing.md,
+  },
+  historicBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.text.tertiary,
+  },
+  historicBadgeText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.inverse,
+  },
+  historicCard: {
+    marginBottom: Spacing.sm,
+  },
+  historicRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  historicDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  historicLabel: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.primary,
+  },
+  historicValue: {
+    fontSize: FontSize.md,
+    color: Colors.text.secondary,
+  },
+  historicDivider: {
+    height: 1,
+    backgroundColor: Colors.card.border,
+    marginVertical: Spacing.sm,
+  },
+  historicStatusText: {
+    flex: 1,
+    fontSize: FontSize.md,
+    color: Colors.text.secondary,
+    lineHeight: 22,
   },
   bulletRow: {
     flexDirection: 'row',
