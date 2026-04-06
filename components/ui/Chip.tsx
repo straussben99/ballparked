@@ -1,7 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { BorderRadius, Spacing } from '../../constants/spacing';
-import { FontSize, FontWeight } from '../../constants/typography';
+import { BorderRadius } from '../../constants/spacing';
 import { Colors } from '../../constants/colors';
 
 interface ChipProps {
@@ -22,8 +21,8 @@ export const Chip: React.FC<ChipProps> = ({
       style={[
         styles.base,
         selected
-          ? { backgroundColor: color, borderColor: color, borderWidth: 1.5 }
-          : { backgroundColor: Colors.background.white, borderColor: color, borderWidth: 1.5 },
+          ? { backgroundColor: color, borderColor: color }
+          : { backgroundColor: Colors.background.white, borderColor: color },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -31,8 +30,9 @@ export const Chip: React.FC<ChipProps> = ({
       <Text
         style={[
           styles.text,
-          { color: selected ? Colors.text.inverse : Colors.text.primary },
+          { color: selected ? '#FFFFFF' : Colors.text.primary },
         ]}
+        numberOfLines={1}
       >
         {label}
       </Text>
@@ -42,16 +42,14 @@ export const Chip: React.FC<ChipProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    minWidth: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    flexShrink: 0,
   },
   text: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    textAlign: 'center',
   },
 });

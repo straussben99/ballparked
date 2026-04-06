@@ -158,9 +158,6 @@ export default function ExploreScreen() {
         {renderSortButton('rating', 'Rating')}
         {renderSortButton('year', 'Year')}
         {renderSortButton('division', 'Division')}
-        <Text style={styles.resultCount}>
-          {filteredStadiums.length} stadium{filteredStadiums.length !== 1 ? 's' : ''}
-        </Text>
       </View>
 
       <FlatList
