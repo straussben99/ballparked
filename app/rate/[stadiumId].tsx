@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -46,6 +47,7 @@ export default function RateStadiumModal() {
     accessibility: { ...DEFAULT_CATEGORY_RATING },
   });
 
+  const [comment, setComment] = useState('');
   const [selectedPhotos, setSelectedPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
@@ -58,6 +60,9 @@ export default function RateStadiumModal() {
         stadiumIdentity: { score: existingRating.identity_score, selectedTags: existingRating.identity_tags },
         accessibility: { score: existingRating.accessibility_score, selectedTags: existingRating.accessibility_tags },
       });
+      if (existingRating.comment) {
+        setComment(existingRating.comment);
+      }
     }
   }, [existingRating]);
 
@@ -145,6 +150,7 @@ export default function RateStadiumModal() {
         views: ratings.views,
         stadiumIdentity: ratings.stadiumIdentity,
         accessibility: ratings.accessibility,
+        comment: comment.trim() || undefined,
       });
 
       // Upload photos if any were selected
@@ -202,6 +208,25 @@ export default function RateStadiumModal() {
             onRatingChange={(r) => handleCategoryChange(category.key, r)}
           />
         ))}
+
+        {/* Review Comment */}
+        <View style={styles.reviewSection}>
+          <Text style={styles.reviewTitle}>{'\u270D\uFE0F'} Your Review</Text>
+          <Text style={styles.reviewSubtext}>
+            Share your thoughts about this stadium (optional)
+          </Text>
+          <TextInput
+            style={styles.reviewInput}
+            value={comment}
+            onChangeText={setComment}
+            placeholder="What stood out? Best food? Worst seat? Share your experience..."
+            placeholderTextColor={Colors.text.tertiary}
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+          />
+          <Text style={styles.reviewCharCount}>{comment.length}/500</Text>
+        </View>
 
         {/* Add Photos Section */}
         <View style={styles.photosSection}>
@@ -371,6 +396,38 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: Spacing['2xl'],
+  },
+  reviewSection: {
+    marginBottom: Spacing.base,
+  },
+  reviewTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary.navy,
+    marginBottom: Spacing.xs,
+  },
+  reviewSubtext: {
+    fontSize: FontSize.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.md,
+  },
+  reviewInput: {
+    backgroundColor: Colors.background.white,
+    borderWidth: 1,
+    borderColor: Colors.card.border,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    fontSize: FontSize.base,
+    color: Colors.text.primary,
+    minHeight: 100,
+  },
+  reviewCharCount: {
+    fontSize: FontSize.xs,
+    color: Colors.text.tertiary,
+    textAlign: 'right',
+    marginTop: Spacing.xs,
   },
   photosSection: {
     marginBottom: Spacing.base,
