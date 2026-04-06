@@ -33,6 +33,20 @@ export const STADIUM_IMAGES: Record<string, ImageSourcePropType> = {
   'dodger-stadium': require('@/assets/stadiums/dodger-stadium.jpg'),
   'petco-park': require('@/assets/stadiums/petco-park.jpg'),
   'oracle-park': require('@/assets/stadiums/oracle-park.jpg'),
+
+  // Historic stadiums
+  'old-yankee-stadium': require('@/assets/stadiums/old-yankee-stadium.jpg'),
+  'shea-stadium': require('@/assets/stadiums/shea-stadium.jpg'),
+  'turner-field': require('@/assets/stadiums/turner-field.jpg'),
+  'veterans-stadium': require('@/assets/stadiums/veterans-stadium.jpg'),
+  'three-rivers-stadium': require('@/assets/stadiums/three-rivers-stadium.jpg'),
+  'astrodome': require('@/assets/stadiums/astrodome.jpg'),
+  'kingdome': require('@/assets/stadiums/kingdome.jpg'),
+  'county-stadium': require('@/assets/stadiums/county-stadium.jpg'),
+  'qualcomm-stadium': require('@/assets/stadiums/qualcomm-stadium.jpg'),
+  'olympic-stadium-montreal': require('@/assets/stadiums/olympic-stadium-montreal.jpg'),
+  'tiger-stadium': require('@/assets/stadiums/tiger-stadium.jpg'),
+  'oakland-coliseum': require('@/assets/stadiums/oakland-coliseum.jpg'),
 };
 
 export function getStadiumImage(stadiumId: string): ImageSourcePropType | undefined {

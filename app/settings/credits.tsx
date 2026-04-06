@@ -32,8 +32,18 @@ export default function CreditsScreen() {
         <View style={styles.card}>
           <Text style={styles.cardText}>
             Stadium photographs are sourced from Wikimedia Commons and are used under Creative
-            Commons licenses. We thank the many photographers who contributed these images to
-            the public domain.
+            Commons licenses (CC BY-SA, CC BY, and public domain). We thank the many
+            photographers who contributed these images.
+          </Text>
+          <Text style={[styles.cardText, { marginTop: 12 }]}>
+            Photos include current MLB stadiums and historic ballparks such as Old Yankee
+            Stadium, Shea Stadium, the Astrodome, Veterans Stadium, Three Rivers Stadium,
+            Turner Field, the Kingdome, Tiger Stadium, County Stadium, Qualcomm Stadium,
+            Olympic Stadium (Montreal), and Oakland Coliseum.
+          </Text>
+          <Text style={[styles.cardText, { marginTop: 12 }]}>
+            All images are used in accordance with their respective Creative Commons licenses.
+            For full attribution details, visit commons.wikimedia.org.
           </Text>
         </View>
       </CreditSection>
