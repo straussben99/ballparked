@@ -89,6 +89,11 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="arrow-back" size={24} color={Colors.primary.navy} />
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Avatar */}
         <TouchableOpacity style={styles.avatarSection} onPress={handlePickAvatar}>
@@ -210,6 +215,12 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.cream },
+  backButton: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.background.white,
+    alignItems: 'center', justifyContent: 'center',
+    marginLeft: Layout.screenPadding, marginTop: Spacing.sm,
+  },
   scroll: { padding: Layout.screenPadding, paddingBottom: 60 },
   avatarSection: { alignItems: 'center', marginBottom: Spacing.xl },
   avatarImage: { width: 90, height: 90, borderRadius: 45 },

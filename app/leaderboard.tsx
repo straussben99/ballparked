@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { Typography, FontWeight } from '@/constants/typography';
@@ -24,6 +25,7 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardScreen() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const followingIds = useSocialStore((s) => s.followingIds);
   const [tab, setTab] = useState<'global' | 'friends'>('global');
@@ -78,6 +80,11 @@ export default function LeaderboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="arrow-back" size={24} color={Colors.primary.navy} />
+      </TouchableOpacity>
+
       {/* Tab Switcher */}
       <View style={styles.tabRow}>
         <TouchableOpacity
@@ -120,6 +127,17 @@ export default function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.cream },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Layout.screenPadding,
+    marginTop: Spacing.sm,
+    ...Shadows.sm,
+  },
   tabRow: {
     flexDirection: 'row', marginHorizontal: Layout.screenPadding, marginTop: Spacing.md,
     backgroundColor: Colors.background.warmGrey, borderRadius: BorderRadius.md, padding: 3,
