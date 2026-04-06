@@ -10,6 +10,8 @@ export default function SettingsLayout() {
         headerTintColor: Colors.primary.navy,
         headerTitleStyle: { ...Typography.bodyBold },
         headerShadowVisible: false,
+        headerBackTitle: '',
+        headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: Colors.background.cream },
       }}
     >
