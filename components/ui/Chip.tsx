@@ -1,6 +1,5 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { BorderRadius } from '../../constants/spacing';
 import { Colors } from '../../constants/colors';
 
 interface ChipProps {
@@ -30,9 +29,8 @@ export const Chip: React.FC<ChipProps> = ({
       <Text
         style={[
           styles.text,
-          { color: selected ? '#FFFFFF' : Colors.text.primary },
+          { color: selected ? '#FFFFFF' : '#1B2A4A' },
         ]}
-        numberOfLines={1}
       >
         {label}
       </Text>
@@ -43,13 +41,14 @@ export const Chip: React.FC<ChipProps> = ({
 const styles = StyleSheet.create({
   base: {
     borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1.5,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 2,
     flexShrink: 0,
   },
   text: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

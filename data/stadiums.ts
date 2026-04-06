@@ -932,8 +932,16 @@ export const STADIUMS: Stadium[] = [
 // Helper Functions
 // ============================================================
 
+// Map old/renamed stadium IDs to current ones
+const LEGACY_IDS: Record<string, string> = {
+  'minute-maid-park': 'daikin-park',
+  'guaranteed-rate-field': 'rate-field',
+  'oakland-coliseum': 'sutter-health-park',
+};
+
 export function getStadiumById(id: string): Stadium | undefined {
-  return STADIUMS.find((stadium) => stadium.id === id);
+  const resolvedId = LEGACY_IDS[id] ?? id;
+  return STADIUMS.find((stadium) => stadium.id === resolvedId);
 }
 
 export function getStadiumsByDivision(division: Division): Stadium[] {
