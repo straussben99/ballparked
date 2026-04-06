@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -187,6 +188,20 @@ export default function RatingDetailScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={Colors.text.inverse} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.heroShareButton}
+            onPress={() => {
+              const displayName = rating.profiles?.display_name ?? 'Someone';
+              let message = `${displayName} rated ${stadiumName} ${rating.overall.toFixed(1)}/10 on BallParked! \u{1F3DF}\u26BE\n\nVibes: ${rating.vibes_score}/10\nFood & Beer: ${rating.food_score}/10\nViews: ${rating.views_score}/10\nStadium Identity: ${rating.identity_score}/10\nAccessibility: ${rating.accessibility_score}/10`;
+              if (rating.comment) {
+                message += `\n\n"${rating.comment}"`;
+              }
+              message += '\n\nDownload BallParked to track your MLB stadium journey!';
+              Share.share({ message });
+            }}
+          >
+            <Ionicons name="share-outline" size={22} color={Colors.text.inverse} />
+          </TouchableOpacity>
         </View>
 
         {/* User Row */}
@@ -331,6 +346,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.xl,
     left: Layout.screenPadding,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroShareButton: {
+    position: 'absolute',
+    top: Spacing.xl,
+    right: Layout.screenPadding,
     width: 36,
     height: 36,
     borderRadius: 18,

@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
+  Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -251,6 +252,17 @@ export default function StadiumDetailScreen() {
             <Text style={styles.communityAvgCount}>
               ({stadiumStats.rating_count} rating{stadiumStats.rating_count !== 1 ? 's' : ''})
             </Text>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={() => {
+                const avg = stadiumStats.avg_rating;
+                Share.share({
+                  message: `Check out ${stadium.name} on BallParked! Community rating: ${avg}/10 \u26BE\u{1F3DF}`,
+                });
+              }}
+            >
+              <Ionicons name="share-outline" size={18} color={Colors.text.secondary} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -643,6 +655,15 @@ const styles = StyleSheet.create({
   communityAvgCount: {
     fontSize: FontSize.md,
     color: Colors.text.tertiary,
+  },
+  shareButton: {
+    marginLeft: 'auto',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.background.warmGrey,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   communityCard: {
     backgroundColor: Colors.background.white,

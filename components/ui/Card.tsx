@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, TouchableOpacity, ViewStyle, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import { View, TouchableOpacity, ViewStyle, StyleSheet, Animated } from 'react-native';
 import { BorderRadius, Layout } from '../../constants/spacing';
 import { Shadows } from '../../constants/shadows';
 import { Colors } from '../../constants/colors';
@@ -11,13 +11,41 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, style, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
   const cardStyle = [styles.card, style];
 
   if (onPress) {
     return (
-      <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.7}>
-        {children}
-      </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          style={cardStyle}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.7}
+        >
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
     );
   }
 

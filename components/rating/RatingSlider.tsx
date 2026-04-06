@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { Spacing } from '@/constants/spacing';
 import { FontSize, FontWeight } from '@/constants/typography';
@@ -35,7 +36,10 @@ export const RatingSlider: React.FC<RatingSliderProps> = ({
                   ? { backgroundColor: GRADIENT_COLORS[i] }
                   : styles.circleInactive,
               ]}
-              onPress={() => onValueChange(num)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onValueChange(num);
+              }}
               activeOpacity={0.7}
             >
               <Text

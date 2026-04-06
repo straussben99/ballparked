@@ -20,7 +20,7 @@ import { DivisionFilter } from '@/components/stadium/DivisionFilter';
 import { StadiumCard } from '@/components/stadium/StadiumCard';
 import type { Stadium, Division } from '@/types/stadium';
 
-type SortKey = 'name' | 'rating' | 'year';
+type SortKey = 'name' | 'rating' | 'year' | 'division';
 
 interface StadiumStatsMap {
   [stadiumId: string]: { avg_rating: number; rating_count: number };
@@ -85,6 +85,19 @@ export default function ExploreScreen() {
       case 'year':
         results.sort((a, b) => a.yearOpened - b.yearOpened);
         break;
+      case 'division': {
+        const divisionOrder = [
+          'AL East', 'AL Central', 'AL West',
+          'NL East', 'NL Central', 'NL West',
+        ];
+        results.sort((a, b) => {
+          const aIdx = divisionOrder.indexOf(a.division);
+          const bIdx = divisionOrder.indexOf(b.division);
+          if (aIdx !== bIdx) return aIdx - bIdx;
+          return a.name.localeCompare(b.name);
+        });
+        break;
+      }
     }
 
     return results;
@@ -144,6 +157,7 @@ export default function ExploreScreen() {
         {renderSortButton('name', 'Name')}
         {renderSortButton('rating', 'Rating')}
         {renderSortButton('year', 'Year')}
+        {renderSortButton('division', 'Division')}
         <Text style={styles.resultCount}>
           {filteredStadiums.length} stadium{filteredStadiums.length !== 1 ? 's' : ''}
         </Text>
