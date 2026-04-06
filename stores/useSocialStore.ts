@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { sendLocalNotification } from '@/lib/notifications';
 
 interface SocialState {
   followingIds: string[];
@@ -44,6 +45,23 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       set((state) => ({
         followingIds: [...state.followingIds, targetUserId],
       }));
+
+      // Send local notification confirming the follow
+      // Also fetch the target user's name for a better message
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('id', targetUserId)
+        .single();
+
+      const targetName =
+        targetProfile?.display_name || targetProfile?.username || 'a user';
+
+      sendLocalNotification(
+        'New Follow',
+        `You're now following ${targetName}`,
+        { type: 'follow', userId: targetUserId }
+      ).catch(console.error);
     } catch (err) {
       console.error('Failed to follow user:', err);
     }

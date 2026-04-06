@@ -2,24 +2,27 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
+// Configure how notifications are displayed when app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowInForeground: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
+// Register for push notifications and save token to Supabase
 export async function registerForPushNotifications(userId: string) {
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device');
     return null;
   }
 
-  // Check permissions
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -33,14 +36,13 @@ export async function registerForPushNotifications(userId: string) {
     return null;
   }
 
-  // Get token
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   const tokenData = await Notifications.getExpoPushTokenAsync({
     projectId,
   });
   const token = tokenData.data;
 
-  // Store in Supabase
+  // Store in Supabase for future remote push notifications
   await supabase.from('push_tokens').upsert(
     {
       user_id: userId,
@@ -62,20 +64,51 @@ export async function registerForPushNotifications(userId: string) {
   return token;
 }
 
-export function setupNotificationListeners(
-  onNotification?: (notification: Notifications.Notification) => void,
-  onResponse?: (response: Notifications.NotificationResponse) => void
+// Send a local notification (works without a server)
+export async function sendLocalNotification(
+  title: string,
+  body: string,
+  data?: Record<string, unknown>
 ) {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data: data ?? {},
+      sound: 'default',
+    },
+    trigger: null, // Show immediately
+  });
+}
+
+// Handle notification taps — navigate to the relevant screen
+function handleNotificationResponse(
+  response: Notifications.NotificationResponse
+) {
+  const data = response.notification.request.content.data;
+
+  if (data?.type === 'follow' && data?.userId) {
+    // Navigate to the follower's profile
+    router.push(`/profile/${data.userId}` as any);
+  } else if (data?.type === 'comment' && data?.ratingId) {
+    // Navigate to the rating that was commented on
+    router.push(`/rating/${data.ratingId}` as any);
+  }
+}
+
+// Set up listeners for incoming notifications and tap responses
+export function setupNotificationListeners() {
   const notificationListener = Notifications.addNotificationReceivedListener(
     (notification) => {
-      onNotification?.(notification);
+      // Notification received while app is in foreground — no-op for now
+      console.log('Notification received:', notification.request.content.title);
     }
   );
 
   const responseListener =
-    Notifications.addNotificationResponseReceivedListener((response) => {
-      onResponse?.(response);
-    });
+    Notifications.addNotificationResponseReceivedListener(
+      handleNotificationResponse
+    );
 
   return () => {
     notificationListener.remove();

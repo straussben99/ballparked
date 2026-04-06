@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { sendLocalNotification } from '@/lib/notifications';
 
 export interface Comment {
   id: string;
@@ -67,6 +68,37 @@ export const useCommentStore = create<CommentState>()((set, get) => ({
 
       // Re-fetch to get joined profile data
       await get().fetchComments(ratingId);
+
+      // Send local notification about the new comment
+      // Fetch the rating owner to personalize the message
+      const { data: rating } = await supabase
+        .from('ratings')
+        .select('user_id, stadium_id')
+        .eq('id', ratingId)
+        .single();
+
+      if (rating) {
+        // Get commenter's display name
+        const { data: commenterProfile } = await supabase
+          .from('profiles')
+          .select('display_name, username')
+          .eq('id', userId)
+          .single();
+
+        const commenterName =
+          commenterProfile?.display_name ||
+          commenterProfile?.username ||
+          'Someone';
+
+        // Only notify if the commenter is not the rating owner
+        if (rating.user_id !== userId) {
+          sendLocalNotification(
+            'New Comment',
+            `${commenterName} commented on your rating`,
+            { type: 'comment', ratingId }
+          ).catch(console.error);
+        }
+      }
     } catch (err) {
       console.error('Failed to add comment:', err);
       throw err;
