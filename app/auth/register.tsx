@@ -12,9 +12,6 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
-import { AppleSignInButton } from '@/components/auth/AppleSignInButton';
-import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { Typography, FontWeight } from '@/constants/typography';
@@ -145,10 +142,6 @@ export default function RegisterScreen() {
               fullWidth
             />
           )}
-
-          <SocialAuthDivider />
-          <AppleSignInButton />
-          <GoogleSignInButton />
 
           <Text style={styles.switchText}>
             Already have an account?{' '}

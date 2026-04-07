@@ -15,7 +15,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BallParked uses your location to show nearby stadiums on the map.",
         "NSPhotoLibraryUsageDescription": "BallParked needs access to your photos to add pictures to your stadium ratings.",
-        "NSCameraUsageDescription": "BallParked uses your camera to take photos of stadiums."
+        "NSCameraUsageDescription": "BallParked uses your camera to take photos of stadiums.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -62,7 +63,11 @@
     },
     "extra": {
       "supabaseUrl": "https://qsodeogjotqjdevkrogt.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzb2Rlb2dqb3RxamRldmtyb2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQzMzIsImV4cCI6MjA5MDcyMDMzMn0.RBZ74r5bsAV7DagD134Kv1RTqe6taZk1tlit9etBzww"
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzb2Rlb2dqb3RxamRldmtyb2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQzMzIsImV4cCI6MjA5MDcyMDMzMn0.RBZ74r5bsAV7DagD134Kv1RTqe6taZk1tlit9etBzww",
+      "router": {},
+      "eas": {
+        "projectId": "5b9662b2-e6fe-4544-ae56-d3acb9e93e6b"
+      }
     }
   }
 }
