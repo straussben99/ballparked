@@ -110,6 +110,10 @@ export default function RateStadiumModal() {
 
         const response = await fetch(photo.uri);
         const blob = await response.blob();
+        if (blob.size > 5 * 1024 * 1024) {
+          console.warn('Photo too large, skipping');
+          continue;
+        }
         const arrayBuffer = await new Response(blob).arrayBuffer();
 
         const { error: uploadError } = await supabase.storage

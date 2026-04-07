@@ -36,7 +36,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password,
     });
 

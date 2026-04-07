@@ -60,9 +60,15 @@ export const useCommentStore = create<CommentState>()((set, get) => ({
 
   addComment: async (ratingId: string, userId: string, text: string) => {
     try {
+      const sanitized = text
+        .trim()
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+        .slice(0, 500);
+      if (!sanitized) return;
+
       const { error } = await supabase
         .from('comments')
-        .insert({ rating_id: ratingId, user_id: userId, text });
+        .insert({ rating_id: ratingId, user_id: userId, text: sanitized });
 
       if (error) throw error;
 

@@ -112,7 +112,7 @@ export default function HomeScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchFeed();

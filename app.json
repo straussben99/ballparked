@@ -11,7 +11,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ballparked.app",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BallParked uses your location to show nearby stadiums on the map.",
+        "NSPhotoLibraryUsageDescription": "BallParked needs access to your photos to add pictures to your stadium ratings.",
+        "NSCameraUsageDescription": "BallParked uses your camera to take photos of stadiums."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -54,6 +59,10 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "supabaseUrl": "https://qsodeogjotqjdevkrogt.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzb2Rlb2dqb3RxamRldmtyb2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDQzMzIsImV4cCI6MjA5MDcyMDMzMn0.RBZ74r5bsAV7DagD134Kv1RTqe6taZk1tlit9etBzww"
     }
   }
 }

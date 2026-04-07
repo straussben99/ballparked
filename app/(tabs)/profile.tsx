@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ export default function ProfileScreen() {
   const visitedIds = useStadiumStore((s) => s.visitedIds);
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
   const ratings = useRatingStore((s) => s.ratings);
-  const allRatings = Object.values(ratings);
+  const allRatings = useMemo(() => Object.values(ratings), [ratings]);
 
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);

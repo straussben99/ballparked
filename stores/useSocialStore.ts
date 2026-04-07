@@ -12,6 +12,8 @@ interface SocialState {
   isFollowing: (userId: string) => boolean;
 }
 
+const pendingFollowOps = new Set<string>();
+
 export const useSocialStore = create<SocialState>()((set, get) => ({
   followingIds: [],
   isLoading: false,
@@ -35,6 +37,8 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
   },
 
   followUser: async (currentUserId: string, targetUserId: string) => {
+    if (pendingFollowOps.has(targetUserId)) return;
+    pendingFollowOps.add(targetUserId);
     try {
       const { error } = await supabase
         .from('follows')
@@ -64,10 +68,14 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       ).catch(console.error);
     } catch (err) {
       console.error('Failed to follow user:', err);
+    } finally {
+      pendingFollowOps.delete(targetUserId);
     }
   },
 
   unfollowUser: async (currentUserId: string, targetUserId: string) => {
+    if (pendingFollowOps.has(targetUserId)) return;
+    pendingFollowOps.add(targetUserId);
     try {
       const { error } = await supabase
         .from('follows')
@@ -82,6 +90,8 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       }));
     } catch (err) {
       console.error('Failed to unfollow user:', err);
+    } finally {
+      pendingFollowOps.delete(targetUserId);
     }
   },
 

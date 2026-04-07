@@ -50,7 +50,7 @@ interface RatingDetail {
     display_name: string;
     username: string;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface RatingPhoto {
@@ -198,13 +198,13 @@ export default function RatingDetailScreen() {
         {/* User Row */}
         <View style={styles.userRow}>
           <Avatar
-            name={rating.profiles?.display_name ?? 'User'}
+            name={rating.profiles?.display_name ?? 'Unknown User'}
             uri={rating.profiles?.avatar_url ?? undefined}
             size={Layout.avatarSize.md}
           />
           <View style={styles.userInfo}>
             <Text style={styles.displayName}>
-              {rating.profiles?.display_name ?? 'User'}
+              {rating.profiles?.display_name ?? 'Unknown User'}
             </Text>
             {rating.profiles?.username && (
               <Text style={styles.username}>@{rating.profiles.username}</Text>

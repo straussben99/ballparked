@@ -44,10 +44,14 @@ export default function RootLayout() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchUserRatings(session.user.id);
-        fetchFollowing(session.user.id);
-        fetchWishlist(session.user.id);
-        registerForPushNotifications(session.user.id).catch(console.error);
+        try {
+          fetchUserRatings(session.user.id);
+          fetchFollowing(session.user.id);
+          fetchWishlist(session.user.id);
+          registerForPushNotifications(session.user.id).catch(console.error);
+        } catch (err) {
+          console.error('Failed to initialize user data:', err);
+        }
       }
       setInitializing(false);
       SplashScreen.hideAsync();
@@ -100,10 +104,6 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen
-          name="stadium/[stadiumId]"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
           name="rate/[stadiumId]"
           options={{ presentation: 'modal', title: 'Rate Stadium' }}
         />
@@ -118,10 +118,6 @@ function RootLayoutNav() {
         <Stack.Screen
           name="settings"
           options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="edit-profile"
-          options={{ title: 'Edit Profile' }}
         />
         <Stack.Screen
           name="leaderboard"

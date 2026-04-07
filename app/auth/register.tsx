@@ -33,8 +33,15 @@ export default function RegisterScreen() {
       setError('Please fill in all fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(normalizedUsername)) {
+      setError(
+        'Username must be 3-20 characters and contain only lowercase letters, numbers, and underscores.'
+      );
       return;
     }
 
@@ -42,12 +49,12 @@ export default function RegisterScreen() {
     setLoading(true);
 
     const { error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password,
       options: {
         data: {
           display_name: displayName.trim(),
-          username: username.trim().toLowerCase(),
+          username: normalizedUsername,
         },
       },
     });
@@ -116,12 +123,12 @@ export default function RegisterScreen() {
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="Min 6 characters"
+            placeholder="Min 8 characters"
             placeholderTextColor={Colors.text.tertiary}
             secureTextEntry
             editable={!loading}
           />
-          <Text style={styles.hint}>Must be at least 6 characters</Text>
+          <Text style={styles.hint}>Must be at least 8 characters</Text>
 
           {loading ? (
             <ActivityIndicator

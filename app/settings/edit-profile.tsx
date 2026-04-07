@@ -53,8 +53,9 @@ export default function EditProfileScreen() {
   const validate = (): string | null => {
     if (!displayName.trim()) return 'Display name is required.';
     if (!username.trim()) return 'Username is required.';
-    if (username !== username.toLowerCase()) return 'Username must be lowercase.';
-    if (/\s/.test(username)) return 'Username cannot contain spaces.';
+    if (!/^[a-z0-9_]{3,20}$/.test(username.trim())) {
+      return 'Username must be 3-20 characters and contain only lowercase letters, numbers, and underscores.';
+    }
     return null;
   };
 
@@ -107,7 +108,7 @@ export default function EditProfileScreen() {
 
       const asset = result.assets[0];
       const fileExt = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const filePath = `avatars/${userId}.${fileExt}`;
+      const filePath = `${userId}/avatar.${fileExt}`;
 
       // Read the file as a blob for upload
       const response = await fetch(asset.uri);
@@ -115,7 +116,7 @@ export default function EditProfileScreen() {
 
       // Upload to Supabase storage (upsert to replace existing)
       const { error: uploadError } = await supabase.storage
-        .from('rating-photos')
+        .from('avatars')
         .upload(filePath, blob, {
           contentType: asset.mimeType ?? 'image/jpeg',
           upsert: true,
@@ -125,7 +126,7 @@ export default function EditProfileScreen() {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('rating-photos')
+        .from('avatars')
         .getPublicUrl(filePath);
 
       // Append cache-buster so the image refreshes
