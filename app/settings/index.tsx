@@ -8,6 +8,7 @@ import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
 import { Typography } from '@/constants/typography';
 import { Shadows } from '@/constants/shadows';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { isAdmin } from '@/lib/admin';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -36,6 +37,8 @@ function SettingsRow({ icon, label, onPress, color, showChevron = true }: Settin
 export default function SettingsScreen() {
   const router = useRouter();
   const signOut = useAuthStore((s) => s.signOut);
+  const user = useAuthStore((s) => s.user);
+  const showAdmin = isAdmin(user?.email);
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
   const handleSignOut = () => {
@@ -55,6 +58,18 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/edit-profile')}
         />
       </View>
+
+      {/* Admin (only visible to admins) */}
+      {showAdmin && (
+        <View style={styles.section}>
+          <SettingsRow
+            icon="shield-checkmark"
+            label="Admin Dashboard"
+            onPress={() => router.push('/admin')}
+            color={Colors.accent.coral}
+          />
+        </View>
+      )}
 
       {/* Legal & Info */}
       <View style={styles.section}>

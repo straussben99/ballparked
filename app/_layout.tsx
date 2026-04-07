@@ -131,6 +131,7 @@ function RootLayoutNav() {
           name="best-of"
           options={{ title: 'Best Of', headerShown: false }}
         />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="dark" />
     </>
