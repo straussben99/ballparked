@@ -1,12 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  Pressable,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -20,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useStadiumStore } from '@/stores/useStadiumStore';
 import { useRatingStore } from '@/stores/useRatingStore';
+import { useSocialStore } from '@/stores/useSocialStore';
 import { getStadiumById } from '@/data/stadiums';
 import { WishlistSection } from '@/components/profile/WishlistSection';
 
@@ -31,33 +33,41 @@ export default function ProfileScreen() {
   const fetchUserRatings = useRatingStore((s) => s.fetchUserRatings);
   const ratings = useRatingStore((s) => s.ratings);
   const allRatings = useMemo(() => Object.values(ratings), [ratings]);
+  const followingIds = useSocialStore((s) => s.followingIds);
+  const fetchFollowing = useSocialStore((s) => s.fetchFollowing);
 
   const [followersCount, setFollowersCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserRatings(user.id);
-      fetchSocialCounts(user.id);
-    }
-  }, [user]);
+  // Derive following count from the store so it updates instantly after follow/unfollow.
+  const followingCount = followingIds.length;
 
-  const fetchSocialCounts = async (userId: string) => {
+  const fetchSocialCounts = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_stats')
-        .select('followers_count, following_count')
+        .select('followers_count')
         .eq('user_id', userId)
         .single();
 
       if (!error && data) {
         setFollowersCount(data.followers_count ?? 0);
-        setFollowingCount(data.following_count ?? 0);
       }
     } catch (err) {
       console.error('Failed to fetch social counts:', err);
     }
-  };
+  }, []);
+
+  // Refetch data whenever the profile tab regains focus so counts stay fresh
+  // after following/unfollowing users from other screens.
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchUserRatings(user.id);
+        fetchFollowing(user.id);
+        fetchSocialCounts(user.id);
+      }
+    }, [user, fetchUserRatings, fetchFollowing, fetchSocialCounts])
+  );
 
   const visitedCount = visitedIds.length;
   const avgRating =
@@ -105,15 +115,37 @@ export default function ProfileScreen() {
               <Text style={styles.statLabel}>Avg Rating</Text>
             </View>
             <View style={styles.statDivider} />
-            <View style={styles.statBox}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statBox,
+                pressed && styles.statBoxPressed,
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: '/follows',
+                  params: { type: 'followers', userId: user?.id ?? '' },
+                } as any)
+              }
+            >
               <Text style={styles.statValue}>{followersCount}</Text>
               <Text style={styles.statLabel}>Followers</Text>
-            </View>
+            </Pressable>
             <View style={styles.statDivider} />
-            <View style={styles.statBox}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statBox,
+                pressed && styles.statBoxPressed,
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: '/follows',
+                  params: { type: 'following', userId: user?.id ?? '' },
+                } as any)
+              }
+            >
               <Text style={styles.statValue}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
-            </View>
+            </Pressable>
           </View>
         </Card>
 
@@ -227,6 +259,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.sm,
+  },
+  statBoxPressed: {
+    opacity: 0.6,
   },
   statValue: {
     ...Typography.h4,

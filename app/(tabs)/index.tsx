@@ -42,7 +42,8 @@ const TRENDING_STADIUMS: TrendingStadium[] = [
   { id: 'oracle-park', name: 'Oracle Park', team: 'Giants', division: 'NL West' },
 ];
 
-interface FeedItem {
+interface RatingFeedItem {
+  kind: 'rating';
   id: string;
   user_id: string;
   display_name: string;
@@ -53,6 +54,20 @@ interface FeedItem {
   comment: string | null;
   created_at: string;
 }
+
+interface FollowFeedItem {
+  kind: 'follow';
+  id: string;
+  user_id: string; // the follower
+  display_name: string;
+  username: string;
+  avatar_url: string | null;
+  target_display_name: string;
+  target_username: string;
+  created_at: string;
+}
+
+type FeedItem = RatingFeedItem | FollowFeedItem;
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -99,13 +114,78 @@ export default function HomeScreen() {
   const fetchFeed = useCallback(async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase.rpc('get_activity_feed', {
+      // 1. Ratings feed (from the RPC)
+      const ratingsPromise = supabase.rpc('get_activity_feed', {
         requesting_user_id: user.id,
         feed_limit: 30,
       });
 
-      if (error) throw error;
-      setFeedItems((data as FeedItem[]) ?? []);
+      // 2. Recent follow events across the app (last 30)
+      const followsPromise = supabase
+        .from('follows')
+        .select('follower_id, following_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      const [ratingsRes, followsRes] = await Promise.all([
+        ratingsPromise,
+        followsPromise,
+      ]);
+
+      if (ratingsRes.error) throw ratingsRes.error;
+      if (followsRes.error) throw followsRes.error;
+
+      const ratingItems: RatingFeedItem[] = (ratingsRes.data ?? []).map(
+        (r: any) => ({ ...r, kind: 'rating' as const })
+      );
+
+      // Resolve profile info for each follower/following involved in recent follows
+      const followRows = followsRes.data ?? [];
+      const profileIds = Array.from(
+        new Set(
+          followRows.flatMap((f: any) => [f.follower_id, f.following_id])
+        )
+      );
+
+      let followItems: FollowFeedItem[] = [];
+      if (profileIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, username, avatar_url')
+          .in('id', profileIds);
+        if (profilesError) throw profilesError;
+
+        const profileById = new Map<string, any>(
+          (profiles ?? []).map((p: any) => [p.id, p])
+        );
+
+        followItems = followRows
+          .map((f: any, idx: number): FollowFeedItem | null => {
+            const follower = profileById.get(f.follower_id);
+            const target = profileById.get(f.following_id);
+            if (!follower || !target) return null;
+            return {
+              kind: 'follow',
+              id: `follow-${f.follower_id}-${f.following_id}-${idx}`,
+              user_id: f.follower_id,
+              display_name: follower.display_name,
+              username: follower.username,
+              avatar_url: follower.avatar_url,
+              target_display_name: target.display_name,
+              target_username: target.username,
+              created_at: f.created_at,
+            };
+          })
+          .filter((x: FollowFeedItem | null): x is FollowFeedItem => x !== null);
+      }
+
+      // Merge and sort by created_at descending
+      const merged = [...ratingItems, ...followItems].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setFeedItems(merged);
     } catch (err) {
       console.error('Failed to fetch feed:', err);
     } finally {
@@ -124,6 +204,37 @@ export default function HomeScreen() {
   };
 
   function renderFeedItem({ item }: { item: FeedItem }) {
+    if (item.kind === 'follow') {
+      return (
+        <Card style={styles.feedCard}>
+          <View style={styles.feedRow}>
+            <Avatar
+              name={item.display_name}
+              uri={item.avatar_url ?? undefined}
+              size={40}
+            />
+            <View style={styles.feedContent}>
+              <Text style={styles.feedText}>
+                <Text style={styles.feedUserName}>{item.display_name}</Text>
+                {' started following '}
+                <Text style={styles.feedUserName}>
+                  {item.target_display_name}
+                </Text>
+              </Text>
+              <Text style={styles.feedTimestamp}>
+                {timeAgo(item.created_at)}
+              </Text>
+            </View>
+            <Ionicons
+              name="person-add"
+              size={18}
+              color={Colors.accent.coral}
+            />
+          </View>
+        </Card>
+      );
+    }
+
     const stadium = getStadiumById(item.stadium_id);
     const stadiumName = stadium?.name ?? item.stadium_id;
 
