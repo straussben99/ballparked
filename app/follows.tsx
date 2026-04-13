@@ -7,8 +7,9 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { Spacing, Layout } from '@/constants/spacing';
@@ -36,6 +37,7 @@ export default function FollowsScreen() {
   const currentUser = useAuthStore((s) => s.user);
   const targetUserId = params.userId ?? currentUser?.id ?? '';
 
+  const router = useRouter();
   const followingIds = useSocialStore((s) => s.followingIds);
   const followUser = useSocialStore((s) => s.followUser);
   const unfollowUser = useSocialStore((s) => s.unfollowUser);
@@ -133,23 +135,30 @@ export default function FollowsScreen() {
     const following = isFollowing(item.user_id);
     const isSelf = item.user_id === currentUser?.id;
 
+    const navigateToProfile = () => {
+      if (isSelf) return; // Tapping yourself does nothing here
+      router.push({ pathname: '/user/[userId]', params: { userId: item.user_id } } as any);
+    };
+
     return (
       <Card style={styles.userCard}>
         <View style={styles.userRow}>
-          <Avatar
-            name={item.display_name}
-            uri={item.avatar_url ?? undefined}
-            size={48}
-          />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{item.display_name}</Text>
-            <Text style={styles.userHandle}>@{item.username}</Text>
-            {item.bio ? (
-              <Text style={styles.userBio} numberOfLines={1}>
-                {item.bio}
-              </Text>
-            ) : null}
-          </View>
+          <Pressable onPress={navigateToProfile} style={styles.userTappable}>
+            <Avatar
+              name={item.display_name}
+              uri={item.avatar_url ?? undefined}
+              size={48}
+            />
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{item.display_name}</Text>
+              <Text style={styles.userHandle}>@{item.username}</Text>
+              {item.bio ? (
+                <Text style={styles.userBio} numberOfLines={1}>
+                  {item.bio}
+                </Text>
+              ) : null}
+            </View>
+          </Pressable>
           {!isSelf && (
             <Button
               title={following ? 'Following' : 'Follow'}
@@ -221,6 +230,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+  },
+  userTappable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
   },
   userInfo: {
     flex: 1,

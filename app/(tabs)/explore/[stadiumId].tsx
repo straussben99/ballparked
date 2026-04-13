@@ -120,7 +120,7 @@ function getInitials(name?: string): string {
 }
 
 export default function StadiumDetailScreen() {
-  const { stadiumId } = useLocalSearchParams<{ stadiumId: string }>();
+  const { stadiumId, from } = useLocalSearchParams<{ stadiumId: string; from?: string }>();
   const router = useRouter();
   const stadium = getStadiumById(stadiumId);
   const isVisited = useStadiumStore((state) => state.isVisited(stadiumId));
@@ -238,7 +238,13 @@ export default function StadiumDetailScreen() {
       {/* Back Button - fixed over hero */}
       <TouchableOpacity
         style={styles.heroBackButton}
-        onPress={() => router.back()}
+        onPress={() => {
+          if (from === 'map') {
+            router.navigate('/(tabs)/map' as any);
+          } else {
+            router.back();
+          }
+        }}
       >
         <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
       </TouchableOpacity>
