@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
   Dimensions,
   Share,
 } from 'react-native';
@@ -196,7 +197,12 @@ export default function RatingDetailScreen() {
         </View>
 
         {/* User Row */}
-        <View style={styles.userRow}>
+        <Pressable
+          style={styles.userRow}
+          onPress={() =>
+            router.push({ pathname: '/user/[userId]', params: { userId: rating.user_id } } as any)
+          }
+        >
           <Avatar
             name={rating.profiles?.display_name ?? 'Unknown User'}
             uri={rating.profiles?.avatar_url ?? undefined}
@@ -213,7 +219,7 @@ export default function RatingDetailScreen() {
           <Text style={styles.timestamp}>
             {getRelativeTime(rating.created_at)}
           </Text>
-        </View>
+        </Pressable>
 
         {/* Overall Score Card */}
         <View style={styles.overallCard}>

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Share,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -234,7 +235,11 @@ export default function StadiumDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       {/* Back Button - fixed over hero */}
       <TouchableOpacity
         style={styles.heroBackButton}
@@ -425,17 +430,24 @@ export default function StadiumDetailScreen() {
                   onPress={() => router.push(('/rating/' + cr.id) as any)}
                 >
                   <View style={styles.communityHeader}>
-                    <Avatar name={cr.profiles?.display_name ?? 'User'} uri={cr.profiles?.avatar_url ?? undefined} size={Layout.avatarSize.sm} />
-                    <View style={styles.communityInfo}>
-                      <Text style={styles.communityDisplayName}>
-                        {cr.profiles?.display_name ?? 'User'}
-                      </Text>
-                      {cr.profiles?.username && (
-                        <Text style={styles.communityUsername}>
-                          @{cr.profiles.username}
+                    <TouchableOpacity
+                      style={styles.communityUserTappable}
+                      onPress={() =>
+                        router.push({ pathname: '/user/[userId]', params: { userId: cr.user_id } } as any)
+                      }
+                    >
+                      <Avatar name={cr.profiles?.display_name ?? 'User'} uri={cr.profiles?.avatar_url ?? undefined} size={Layout.avatarSize.sm} />
+                      <View style={styles.communityInfo}>
+                        <Text style={styles.communityDisplayName}>
+                          {cr.profiles?.display_name ?? 'User'}
                         </Text>
-                      )}
-                    </View>
+                        {cr.profiles?.username && (
+                          <Text style={styles.communityUsername}>
+                            @{cr.profiles.username}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
                     <View style={styles.communityScoreBadge}>
                       <Text style={styles.communityScoreText}>{cr.overall}</Text>
                     </View>
@@ -484,21 +496,28 @@ export default function StadiumDetailScreen() {
                   onPress={() => router.push(('/rating/' + cr.id) as any)}
                 >
                   <View style={styles.communityHeader}>
-                    <View style={styles.communityAvatar}>
-                      <Text style={styles.communityAvatarText}>
-                        {getInitials(cr.profiles?.display_name)}
-                      </Text>
-                    </View>
-                    <View style={styles.communityInfo}>
-                      <Text style={styles.communityDisplayName}>
-                        {cr.profiles?.display_name ?? 'User'}
-                      </Text>
-                      {cr.profiles?.username && (
-                        <Text style={styles.communityUsername}>
-                          @{cr.profiles.username}
+                    <TouchableOpacity
+                      style={styles.communityUserTappable}
+                      onPress={() =>
+                        router.push({ pathname: '/user/[userId]', params: { userId: cr.user_id } } as any)
+                      }
+                    >
+                      <View style={styles.communityAvatar}>
+                        <Text style={styles.communityAvatarText}>
+                          {getInitials(cr.profiles?.display_name)}
                         </Text>
-                      )}
-                    </View>
+                      </View>
+                      <View style={styles.communityInfo}>
+                        <Text style={styles.communityDisplayName}>
+                          {cr.profiles?.display_name ?? 'User'}
+                        </Text>
+                        {cr.profiles?.username && (
+                          <Text style={styles.communityUsername}>
+                            @{cr.profiles.username}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
                     <View style={styles.communityScoreBadge}>
                       <Text style={styles.communityScoreText}>{cr.overall}</Text>
                     </View>
@@ -541,7 +560,7 @@ export default function StadiumDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -778,6 +797,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  communityUserTappable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
   },
   communityAvatar: {
     width: Layout.avatarSize.sm,

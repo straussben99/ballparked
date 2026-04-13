@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, SafeAreaView,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, Pressable, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -61,7 +61,12 @@ export default function LeaderboardScreen() {
   const renderItem = ({ item }: { item: LeaderboardEntry }) => {
     const isMe = item.user_id === user?.id;
     return (
-      <View style={[styles.row, isMe && styles.rowHighlight]}>
+      <Pressable
+        style={[styles.row, isMe && styles.rowHighlight]}
+        onPress={() =>
+          router.push({ pathname: '/user/[userId]', params: { userId: item.user_id } } as any)
+        }
+      >
         <Text style={styles.rank}>{getRankDisplay(item.rank)}</Text>
         <Avatar name={item.display_name} size={38} uri={item.avatar_url ?? undefined} />
         <View style={styles.info}>
@@ -74,7 +79,7 @@ export default function LeaderboardScreen() {
             {Number(item.avg_rating) > 0 ? `${Number(item.avg_rating).toFixed(1)} avg` : ''}
           </Text>
         </View>
-      </View>
+      </Pressable>
     );
   };
 

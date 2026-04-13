@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ImageBackground,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -208,11 +209,17 @@ export default function HomeScreen() {
       return (
         <Card style={styles.feedCard}>
           <View style={styles.feedRow}>
-            <Avatar
-              name={item.display_name}
-              uri={item.avatar_url ?? undefined}
-              size={40}
-            />
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: '/user/[userId]', params: { userId: item.user_id } } as any)
+              }
+            >
+              <Avatar
+                name={item.display_name}
+                uri={item.avatar_url ?? undefined}
+                size={40}
+              />
+            </Pressable>
             <View style={styles.feedContent}>
               <Text style={styles.feedText}>
                 <Text style={styles.feedUserName}>{item.display_name}</Text>
@@ -241,7 +248,13 @@ export default function HomeScreen() {
     return (
       <Card style={styles.feedCard} onPress={() => router.push(('/rating/' + item.id) as any)}>
         <View style={styles.feedRow}>
-          <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={40} />
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: '/user/[userId]', params: { userId: item.user_id } } as any)
+            }
+          >
+            <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={40} />
+          </Pressable>
           <View style={styles.feedContent}>
             <Text style={styles.feedText}>
               <Text style={styles.feedUserName}>{item.display_name}</Text>

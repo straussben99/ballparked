@@ -4,10 +4,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -47,6 +49,7 @@ function getInitials(name?: string): string {
 }
 
 export function CommentSection({ ratingId, stadiumId }: CommentSectionProps) {
+  const router = useRouter();
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const fetchComments = useCommentStore((s) => s.fetchComments);
@@ -99,25 +102,32 @@ export function CommentSection({ ratingId, stadiumId }: CommentSectionProps) {
           const isOwn = user?.id === comment.user_id;
           return (
             <View key={comment.id} style={styles.commentRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {getInitials(comment.display_name)}
-                </Text>
-              </View>
-              <View style={styles.commentBody}>
-                <View style={styles.commentHeader}>
-                  <Text style={styles.displayName}>
-                    {comment.display_name ?? 'User'}
-                  </Text>
-                  {comment.username && (
-                    <Text style={styles.username}>@{comment.username}</Text>
-                  )}
-                  <Text style={styles.timestamp}>
-                    {getRelativeTime(comment.created_at)}
+              <Pressable
+                style={styles.commentTappable}
+                onPress={() =>
+                  router.push({ pathname: '/user/[userId]', params: { userId: comment.user_id } } as any)
+                }
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {getInitials(comment.display_name)}
                   </Text>
                 </View>
-                <Text style={styles.commentText}>{comment.text}</Text>
-              </View>
+                <View style={styles.commentBody}>
+                  <View style={styles.commentHeader}>
+                    <Text style={styles.displayName}>
+                      {comment.display_name ?? 'User'}
+                    </Text>
+                    {comment.username && (
+                      <Text style={styles.username}>@{comment.username}</Text>
+                    )}
+                    <Text style={styles.timestamp}>
+                      {getRelativeTime(comment.created_at)}
+                    </Text>
+                  </View>
+                  <Text style={styles.commentText}>{comment.text}</Text>
+                </View>
+              </Pressable>
               {isOwn && (
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -189,6 +199,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: Spacing.md,
+  },
+  commentTappable: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flex: 1,
   },
   avatar: {
     width: Layout.avatarSize.sm,
