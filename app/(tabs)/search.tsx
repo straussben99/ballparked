@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { Spacing, BorderRadius, Layout } from '@/constants/spacing';
@@ -41,6 +43,7 @@ export default function SearchScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const router = useRouter();
   const currentUser = useAuthStore((s) => s.user);
   const followingIds = useSocialStore((s) => s.followingIds);
   const followUser = useSocialStore((s) => s.followUser);
@@ -120,23 +123,28 @@ export default function SearchScreen() {
 
   function renderUserCard({ item }: { item: UserStat }) {
     const following = isFollowing(item.user_id);
+    const navigateToProfile = () => {
+      router.push({ pathname: '/user/[userId]', params: { userId: item.user_id } } as any);
+    };
     return (
       <Card style={styles.userCard}>
         <View style={styles.userRow}>
-          <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={48} />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{item.display_name}</Text>
-            <Text style={styles.userHandle}>@{item.username}</Text>
-            {item.bio ? (
-              <Text style={styles.userBio} numberOfLines={1}>{item.bio}</Text>
-            ) : null}
-            <View style={styles.progressRow}>
-              <Text style={styles.visitedLabel}>{item.stadiums_visited}/30 visited</Text>
-              <View style={styles.progressWrap}>
-                <ProgressBar progress={item.stadiums_visited / 30} height={6} />
+          <Pressable onPress={navigateToProfile} style={styles.userTappable}>
+            <Avatar name={item.display_name} uri={item.avatar_url ?? undefined} size={48} />
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{item.display_name}</Text>
+              <Text style={styles.userHandle}>@{item.username}</Text>
+              {item.bio ? (
+                <Text style={styles.userBio} numberOfLines={1}>{item.bio}</Text>
+              ) : null}
+              <View style={styles.progressRow}>
+                <Text style={styles.visitedLabel}>{item.stadiums_visited}/30 visited</Text>
+                <View style={styles.progressWrap}>
+                  <ProgressBar progress={item.stadiums_visited / 30} height={6} />
+                </View>
               </View>
             </View>
-          </View>
+          </Pressable>
           <Button
             title={following ? 'Following' : 'Follow'}
             onPress={() => handleToggleFollow(item.user_id)}
@@ -260,6 +268,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+  },
+  userTappable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
   },
   userInfo: {
     flex: 1,

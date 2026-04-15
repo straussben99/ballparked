@@ -55,7 +55,7 @@ export default function MapScreen() {
   const pct = total > 0 ? Math.round((visitedCount / total) * 100) : 0;
 
   const handleStadiumPress = (stadiumId: string) => {
-    router.push(`/explore/${stadiumId}` as any);
+    router.push({ pathname: '/explore/[stadiumId]', params: { stadiumId, from: 'map' } } as any);
   };
 
   const isVisited = (id: string) => visitedIds.includes(id);

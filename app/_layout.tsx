@@ -132,6 +132,7 @@ function RootLayoutNav() {
           options={{ title: 'Best Of', headerShown: false }}
         />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="follows" options={{ title: 'Follows' }} />
       </Stack>
       <StatusBar style="dark" />
     </>

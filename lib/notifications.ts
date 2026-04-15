@@ -64,7 +64,7 @@ export async function registerForPushNotifications(userId: string) {
   return token;
 }
 
-// Send a local notification (works without a server)
+// Send a local notification (works without a server — shows on THIS device only)
 export async function sendLocalNotification(
   title: string,
   body: string,
@@ -81,6 +81,50 @@ export async function sendLocalNotification(
   });
 }
 
+// Send a push notification to a specific user via Expo Push API.
+// Looks up the user's push token from Supabase and sends the notification
+// to THEIR device (not the current device).
+export async function sendPushToUser(
+  targetUserId: string,
+  title: string,
+  body: string,
+  data?: Record<string, unknown>
+) {
+  try {
+    // Fetch the target user's push tokens
+    const { data: tokens, error } = await supabase
+      .from('push_tokens')
+      .select('token')
+      .eq('user_id', targetUserId);
+
+    if (error || !tokens || tokens.length === 0) {
+      // User has no push token registered — they may not have enabled notifications
+      return;
+    }
+
+    // Send push notification via Expo's push API
+    const messages = tokens.map((t: { token: string }) => ({
+      to: t.token,
+      sound: 'default',
+      title,
+      body,
+      data: data ?? {},
+    }));
+
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messages),
+    });
+  } catch (err) {
+    console.error('Failed to send push notification:', err);
+  }
+}
+
 // Handle notification taps — navigate to the relevant screen
 function handleNotificationResponse(
   response: Notifications.NotificationResponse
@@ -89,7 +133,7 @@ function handleNotificationResponse(
 
   if (data?.type === 'follow' && data?.userId) {
     // Navigate to the follower's profile
-    router.push(`/profile/${data.userId}` as any);
+    router.push({ pathname: '/user/[userId]', params: { userId: data.userId as string } } as any);
   } else if (data?.type === 'comment' && data?.ratingId) {
     // Navigate to the rating that was commented on
     router.push(`/rating/${data.ratingId}` as any);

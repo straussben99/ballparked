@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
-import { sendLocalNotification } from '@/lib/notifications';
+import { sendPushToUser } from '@/lib/notifications';
 
 export interface Comment {
   id: string;
@@ -96,9 +96,10 @@ export const useCommentStore = create<CommentState>()((set, get) => ({
           commenterProfile?.username ||
           'Someone';
 
-        // Only notify if the commenter is not the rating owner
+        // Send push notification to the rating OWNER's device (not the commenter's)
         if (rating.user_id !== userId) {
-          sendLocalNotification(
+          sendPushToUser(
+            rating.user_id,
             'New Comment',
             `${commenterName} commented on your rating`,
             { type: 'comment', ratingId }
