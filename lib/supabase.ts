@@ -15,24 +15,28 @@ const supabaseUrl =
 const supabaseAnonKey =
   Constants.expoConfig?.extra?.supabaseAnonKey || FALLBACK_SUPABASE_ANON_KEY;
 
-// SecureStore adapter for auth token persistence (native only)
+// SecureStore adapter for auth token persistence (native only).
+// On web, localStorage may not exist during SSR/prerender — guard accordingly.
+const isBrowser =
+  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
 const SecureStoreAdapter = {
   getItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
+      return isBrowser ? window.localStorage.getItem(key) : null;
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
     if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
+      if (isBrowser) window.localStorage.setItem(key, value);
       return;
     }
     await SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
+      if (isBrowser) window.localStorage.removeItem(key);
       return;
     }
     await SecureStore.deleteItemAsync(key);

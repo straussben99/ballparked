@@ -77,7 +77,7 @@ export default function UserProfileScreen() {
           .single(),
         supabase
           .from('user_stats')
-          .select('followers_count, following_count, visited_count, ratings_count, avg_rating')
+          .select('followers_count, following_count, stadiums_visited, avg_rating')
           .eq('user_id', userId)
           .single(),
         supabase
@@ -92,8 +92,8 @@ export default function UserProfileScreen() {
         setStats({
           followers_count: statsRes.data.followers_count ?? 0,
           following_count: statsRes.data.following_count ?? 0,
-          visited_count: statsRes.data.visited_count ?? 0,
-          ratings_count: statsRes.data.ratings_count ?? 0,
+          visited_count: statsRes.data.stadiums_visited ?? 0,
+          ratings_count: statsRes.data.stadiums_visited ?? 0,
           avg_rating: statsRes.data.avg_rating ?? 0,
         });
       }
